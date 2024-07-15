@@ -22,6 +22,15 @@ def cal_rows(date_ini, date_end, steps):
 
     return cal_rows
 
+def get_parameters_NASA_POWER(options: list) -> list:
+
+    parameters = []
+
+    for i in range(0,len(options),1):
+        parameters.append(dict_parameters[options[i]][0])
+
+    return parameters
+
 def get_dataframe_NASA_POWER(latitude, longitude, start, end, parameters):
 
     dataframe = query_power(geometry = point(x=longitude, y=latitude, crs="EPSG:4326"),
@@ -38,9 +47,10 @@ def get_dataframe_NASA_POWER(latitude, longitude, start, end, parameters):
     for i in range(0,len(list_columns_drop),1):
         if list_columns_drop[i] in list_columns:
             dataframe = dataframe.drop(columns=[list_columns_drop[i]])
-        
-    if "ALLSKY_SFC_SW_DWN" in list_columns:
-        dataframe = dataframe.rename(columns={"ALLSKY_SFC_SW_DWN": "Gin(W/m²)"})
+
+    for key in dict_parameters:
+        if dict_parameters[key][0] in list_columns:
+            dataframe = dataframe.rename(columns={dict_parameters[key][0]: dict_parameters[key][1]})
 
     return dataframe
 
@@ -72,8 +82,19 @@ def get_list_tabs_graph(list_data_columns, list_options_columns_name, list_optio
     return list_tabs_graph_name, list_tabs_graph_label
 
 def view_dataframe_information(dataframe):
-    list_options_columns_name = ["Load(W)", "Gin(W/m²)", "Tamb(°C)", "Vwind(m/s)"]
-    list_options_columns_label = ["💡 Load(W)", "🌤️ Gin(W/m²)", "🌡️ Tamb(°C)", "✈️ Vwind(m/s)"]
+
+    list_options_columns_name = ["Load(W)",
+                                 "Gin(W/m²)",
+                                 "Tamb 2msnm(°C)",
+                                 "Vwind 10msnm(m/s)",
+                                 "Vwind 50msnm(m/s)"]
+
+    list_options_columns_label = ["💡 Load(W)",
+                                  "🌤️ Gin(W/m²)",
+                                  "🌡️ Tamb 2msnm(°C)",
+                                  "✈️ Vwind 10msnm(m/s)",
+                                  "✈️ Vwind 50msnm(m/s)"]
+    
     list_data_columns = list(dataframe.columns)
 
     list_tabs_graph_name, list_tabs_graph_label = get_list_tabs_graph(list_data_columns,
@@ -111,7 +132,16 @@ if 'app_1_option_1_var_flagAccept' not in st.session_state:
 
 #%% Main
 
-st.header(":mostly_sunny: All Sky Surface Shortwave Downward Irradiance", divider=True)
+dict_parameters = {
+    "Irradiancia (W/m^2)" : ("ALLSKY_SFC_SW_DWN", "Gin(W/m²)"),
+    "Velocidad del viento a 10 msnm (m/s)" : ("WS10M", "Vwind 10msnm(m/s)"),
+    "Velocidad del viento a 50 msnm (m/s)" : ("WS50M", "Vwind 50msnm(m/s)"),
+    "Temperatura ambiente a 2 msnm (°C)" : ("T2M", "Tamb 2msnm(°C)")
+    }
+
+options_multiselect = list(dict_parameters.keys())
+
+st.header(":mostly_sunny: Datos climáticos y potencial energético del sitio", divider=True)
 
 with st.form("app_1_option_1"):
     data_dates = ""
@@ -121,8 +151,12 @@ with st.form("app_1_option_1"):
     lat_input = col1.number_input('Ingrese la latitud:', min_value=-90.0, max_value=90.0, step=0.000001, format="%.6f", value=7.142056)
     lon_input = col2.number_input('Ingrese la longitud:', min_value=-180.0, max_value=180.0, step=0.000001, format="%.6f", value=-73.121231)
 
-    date_ini = col1.date_input("Fecha de inicio:")
+    date_ini = col1.date_input("Fecha de Inicio:")
     date_end = col2.date_input("Fecha Final:")
+
+    options = st.multiselect("Seleccione los datos a cargar: ",
+                             options=options_multiselect,
+                             placeholder="Seleccione una opción")
 
     m = folium.Map(location=[lat_input, lon_input], zoom_start=17)
 
@@ -137,22 +171,33 @@ with st.form("app_1_option_1"):
     if app_1_option_1_submitted:
         cal_rows = cal_rows(date_ini, date_end, steps=60)
 
-        if cal_rows > 0:
-            data = get_dataframe_NASA_POWER(latitude=lat_input,
-                                            longitude=lon_input,
-                                            start=date_ini,
-                                            end=date_end,
-                                            parameters=["ALLSKY_SFC_SW_DWN"])
-                    
-            data_dates = add_column_dates(dataframe=data,
-                                          date_ini=date_ini,
-                                          rows=cal_rows,
-                                          steps=60)
-            
-            with st.container(border=True):
-                view_dataframe_information(data_dates)
+        if len(options) != 0:
+            if cal_rows > 0:
+                parameters = get_parameters_NASA_POWER(options)
 
-            st.session_state.app_1_option_1_var_flagAccept = True
+                data = get_dataframe_NASA_POWER(latitude=lat_input,
+                                                longitude=lon_input,
+                                                start=date_ini,
+                                                end=date_end,
+                                                parameters=parameters)
+                        
+                data_dates = add_column_dates(dataframe=data,
+                                              date_ini=date_ini,
+                                              rows=cal_rows,
+                                              steps=60)
+                
+                with st.container(border=True):
+                    view_dataframe_information(data_dates)
+
+                st.session_state.app_1_option_1_var_flagAccept = True
+            else:
+                if cal_rows == 0:
+                    st.warning("La {0} debe ser diferente a la {1}".format(":blue[Fecha de Inicio]", ":blue[Fecha final]"), icon="⚠️")
+                if cal_rows < 0:
+                    st.warning("La {0} debe ser menor a la {1}".format(":blue[Fecha de Inicio]", ":blue[Fecha final]"), icon="⚠️")
+        else:
+            st.warning("Ingrese por lo menos una opción en {0}".format(":blue[Seleccione los datos a cargar]"), icon="⚠️")
+            
 
 if st.session_state.app_1_option_1_var_flagAccept and isinstance(data_dates, pd.DataFrame):
             
