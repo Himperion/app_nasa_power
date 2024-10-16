@@ -23,7 +23,6 @@ def cal_rows(date_ini, date_end, steps):
     return cal_rows
 
 def get_parameters_NASA_POWER(options: list) -> list:
-
     parameters = []
 
     for i in range(0,len(options),1):
