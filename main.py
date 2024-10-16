@@ -31,7 +31,7 @@ def get_parameters_NASA_POWER(options: list) -> list:
 
     return parameters
 
-def get_dataframe_NASA_POWER(latitude, longitude, start, end, parameters):
+def get_dataframe_NASA_POWER(latitude, longitude, start, end, parameters) -> pd.DataFrame:
 
     dataframe = query_power(geometry = point(x=longitude, y=latitude, crs="EPSG:4326"),
                             start = start,
