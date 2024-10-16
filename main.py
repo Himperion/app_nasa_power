@@ -59,8 +59,8 @@ def add_column_dates(dataframe, date_ini, rows, steps):
     list_columns = list(dataframe.columns)
     if not "dates (Y-M-D hh:mm:ss)" in list_columns:
         dates = pd.date_range(start=date_ini,
-                              periods=rows,
-                              freq=pd.Timedelta(minutes=steps))
+                            periods=rows,
+                            freq=pd.Timedelta(minutes=steps))
         
         if dataframe.shape[0] >= dates.shape[0]:
             dataframe = dataframe.head(rows)
@@ -84,22 +84,22 @@ def get_list_tabs_graph(list_data_columns, list_options_columns_name, list_optio
 def view_dataframe_information(dataframe):
 
     list_options_columns_name = ["Load(W)",
-                                 "Gin(W/m²)",
-                                 "Tamb 2msnm(°C)",
-                                 "Vwind 10msnm(m/s)",
-                                 "Vwind 50msnm(m/s)"]
+                                "Gin(W/m²)",
+                                "Tamb 2msnm(°C)",
+                                "Vwind 10msnm(m/s)",
+                                "Vwind 50msnm(m/s)"]
 
     list_options_columns_label = ["💡 Load(W)",
-                                  "🌤️ Gin(W/m²)",
-                                  "🌡️ Tamb 2msnm(°C)",
-                                  "✈️ Vwind 10msnm(m/s)",
-                                  "✈️ Vwind 50msnm(m/s)"]
+                                "🌤️ Gin(W/m²)",
+                                "🌡️ Tamb 2msnm(°C)",
+                                "✈️ Vwind 10msnm(m/s)",
+                                "✈️ Vwind 50msnm(m/s)"]
     
     list_data_columns = list(dataframe.columns)
 
     list_tabs_graph_name, list_tabs_graph_label = get_list_tabs_graph(list_data_columns,
-                                                                      list_options_columns_name,
-                                                                      list_options_columns_label)
+                                                                    list_options_columns_name,
+                                                                    list_options_columns_label)
     
     tab_con1, tab_con2 = st.tabs(["📄 Tabla", "📈 Gráficas"])
     with tab_con1:
@@ -155,14 +155,14 @@ with st.form("app_1_option_1"):
     date_end = col2.date_input("Fecha Final:")
 
     options = st.multiselect("Seleccione los datos a cargar: ",
-                             options=options_multiselect,
-                             placeholder="Seleccione una opción")
+                            options=options_multiselect,
+                            placeholder="Seleccione una opción")
 
     m = folium.Map(location=[lat_input, lon_input], zoom_start=17)
 
     folium.Marker([lat_input, lon_input],
-                  popup=f'Latitud: {lat_input}, Longitud: {lon_input}',
-                  draggable=False).add_to(m)
+                popup=f'Latitud: {lat_input}, Longitud: {lon_input}',
+                draggable=False).add_to(m)
 
     st_data = st_folium(m, width=725, height=400)
 
@@ -182,9 +182,9 @@ with st.form("app_1_option_1"):
                                                 parameters=parameters)
                         
                 data_dates = add_column_dates(dataframe=data,
-                                              date_ini=date_ini,
-                                              rows=cal_rows,
-                                              steps=60)
+                                            date_ini=date_ini,
+                                            rows=cal_rows,
+                                            steps=60)
                 
                 with st.container(border=True):
                     view_dataframe_information(data_dates)
@@ -207,6 +207,6 @@ if st.session_state.app_1_option_1_var_flagAccept and isinstance(data_dates, pd.
     excel_bytes_io.seek(0)
 
     st.download_button(label="Descargar archivo",
-                       data= excel_bytes_io.read(),
-                       file_name=name_file_head("ALLSKY_SFC_SW_DWN.xlsx"))
+                    data= excel_bytes_io.read(),
+                    file_name=name_file_head("ALLSKY_SFC_SW_DWN.xlsx"))
 
