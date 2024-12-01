@@ -1,0 +1,8 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/app-nasa-power/app-nasa-power', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/app-nasa-power/app-nasa-power']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args: ['-c', 'gcloud beta run deploy mi-app --image gcr.io/app-nasa-power/app-nasa-power --platform managed --region us-central1 --allow-unauthenticated']
