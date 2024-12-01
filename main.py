@@ -12,14 +12,8 @@ from folium.plugins import MousePosition
 warnings.filterwarnings("ignore")
 
 # Inicializar session_state
-if 'app_1_option_1_var_flagAccept' not in st.session_state:
-    st.session_state.app_1_option_1_var_flagAccept = False
-
-if 'latitude' not in st.session_state:
-    st.session_state.latitude = 7.142056
-
-if 'longitude' not in st.session_state:
-    st.session_state.longitude = -73.121231
+if 'form1_accept' not in st.session_state:
+    st.session_state.form1_accept = False
 
 # Funciones
 
@@ -198,82 +192,71 @@ dict_parameters = {
 
 options_multiselect = list(dict_parameters.keys())
 
-# Crear dos pestañas
+latitude, longitude, data_dates = None, None, None
+
 tab1, tab2 = st.tabs(["Datos Climáticos", "Cambiar intervalo de tiempo"])
 
 with tab1:
     st.header(":mostly_sunny: Datos climáticos y potencial energético del sitio", divider=True)
 
-    col1, col2 = st.columns([0.5, 0.5])
+    click_map = folium.Map(location=[7.142056, -73.121231], zoom_start=18)
+    click_marker = folium.LatLngPopup()
+    click_map.add_child(click_marker)
 
-    lat_input = col1.number_input('Ingrese la latitud:', min_value=-90.0, max_value=90.0, step=0.000001, format="%.6f", key="latitude_input", value=st.session_state.latitude)
-    lon_input = col2.number_input('Ingrese la longitud:', min_value=-180.0, max_value=180.0, step=0.000001, format="%.6f", key="longitude_input", value=st.session_state.longitude)
+    with st.container(height=400):
+        map_local = st_folium(click_map, width=700, height=400)
 
-    date_ini = col1.date_input("Fecha de Inicio:")
-    date_end = col2.date_input("Fecha Final:")
+    if map_local and map_local["last_clicked"]:
+        coords = map_local["last_clicked"]
+        latitude = round(coords['lat'], 5)
+        longitude = round(coords['lng'], 5)
 
-    options = st.multiselect("Seleccione los datos a cargar:",
-                             options=options_multiselect,
-                             placeholder="Seleccione una opción")
+        st.markdown(f"**:blue[Latitud:]** {latitude} **:blue[Longitud:]** {longitude}")
 
-    # Crear el mapa inicialmente
-    m = folium.Map(location=[st.session_state.latitude, st.session_state.longitude], zoom_start=17)
+    with st.form('form_1'):
+        col1, col2 = st.columns([0.5, 0.5])
 
-    folium.Marker([st.session_state.latitude, st.session_state.longitude],
-                  popup=f'Latitud: {st.session_state.latitude}, Longitud: {st.session_state.longitude}',
-                  draggable=False).add_to(m)
+        date_ini = col1.date_input("Fecha de Inicio:")
+        date_end = col2.date_input("Fecha Final:")
 
-    # Agregar plugin para obtener la posición del ratón
-    MousePosition().add_to(m)
+        options = st.multiselect("Seleccione los datos a cargar:",
+                                 options=options_multiselect,
+                                 placeholder="Seleccione una opción",
+                                 default=options_multiselect[0])
+        
+        form_1_submitted = st.form_submit_button("Aceptar")
 
-    # Agregar script para manejar eventos de clic en el mapa
-    m.add_child(folium.LatLngPopup())
+        if form_1_submitted:
+            if latitude is not None and longitude is not None:
+                if len(options) != 0:
+                    cal_rows = cal_rows(date_ini, date_end, steps=60)
+                    if cal_rows > 0:
+                        parameters = get_parameters_NASA_POWER(options)
 
-    st_data = st_folium(m, width=725, height=400)
+                        data = get_dataframe_NASA_POWER(latitude=latitude,
+                                                        longitude=longitude,
+                                                        start=date_ini,
+                                                        end=date_end,
+                                                        parameters=parameters)
 
-    # Actualizar coordenadas cuando se hace clic en el mapa
-    if st_data["last_clicked"] is not None:
-        st.session_state.latitude = st_data["last_clicked"]["lat"]
-        st.session_state.longitude = st_data["last_clicked"]["lng"]
-        # Actualizar los cuadros de entrada sin redibujar el mapa
-        lat_input = st.session_state.latitude
-        lon_input = st.session_state.longitude
+                        data_dates = add_column_dates(dataframe=data,
+                                                      date_ini=date_ini,
+                                                      rows=cal_rows,
+                                                      steps=60)
+                        
+                        with st.container():
+                            view_dataframe_information(data_dates)
 
-    with st.form("app_1_option_1"):
-        app_1_option_1_submitted = st.form_submit_button("Aceptar")
-
-        if app_1_option_1_submitted:
-            cal_rows = cal_rows(date_ini, date_end, steps=60)
-
-            if len(options) != 0:
-                if cal_rows > 0:
-                    parameters = get_parameters_NASA_POWER(options)
-
-                    data = get_dataframe_NASA_POWER(latitude=st.session_state.latitude,
-                                                    longitude=st.session_state.longitude,
-                                                    start=date_ini,
-                                                    end=date_end,
-                                                    parameters=parameters)
-
-                    data_dates = add_column_dates(dataframe=data,
-                                                  date_ini=date_ini,
-                                                  rows=cal_rows,
-                                                  steps=60)
-
-                    with st.container():
-                        view_dataframe_information(data_dates)
-
-                    st.session_state.app_1_option_1_var_flagAccept = True
-                else:
-                    if cal_rows == 0:
+                        st.session_state.form1_accept = True
+                    else:
                         st.warning("La {0} debe ser diferente a la {1}".format(":blue[Fecha de Inicio]", ":blue[Fecha final]"), icon="⚠️")
-                    if cal_rows < 0:
-                        st.warning("La {0} debe ser menor a la {1}".format(":blue[Fecha de Inicio]", ":blue[Fecha final]"), icon="⚠️")
+                else:
+                    st.warning("Ingrese por lo menos una opción en :blue[Seleccione los datos a cargar]", icon="⚠️")
             else:
-                st.warning("Ingrese por lo menos una opción en {0}".format(":blue[Seleccione los datos a cargar]"), icon="⚠️")
+                st.warning("Ingrese una latitud y longitud en el mapa interactivo", icon="⚠️")
 
-    if st.session_state.app_1_option_1_var_flagAccept and 'data_dates' in locals():
-
+            
+    if st.session_state.form1_accept and data_dates is not None:
         excel_bytes_io = io.BytesIO()
         data_dates.to_excel(excel_bytes_io, index=False)
         excel_bytes_io.seek(0)
@@ -281,6 +264,8 @@ with tab1:
         st.download_button(label="Descargar archivo",
                            data=excel_bytes_io.read(),
                            file_name=name_file_head("ALLSKY_SFC_SW_DWN.xlsx"))
+
+ 
 
 with tab2:
     st.header("Cargar archivo para variar el intervalo de tiempo")
