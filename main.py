@@ -171,13 +171,14 @@ def aplicar_gradient(row):
         new_rows.append(new_row)
     return new_rows
 
-def procesar_datos(org, aplicar_gradient, datos_columnas, out, output_filename):
+def procesar_datos(org, aplicar_gradient, datos_columnas, out):
     aux = []
     aux = np.vstack(org.apply(aplicar_gradient, axis=1).explode().to_numpy())
     aux_df = pd.DataFrame(aux, columns=datos_columnas)
     common_columns = aux_df.columns.intersection(out.columns)
     out[common_columns] = aux_df[common_columns]
-    # out.to_excel(output_filename, index=False)
+    return out
+    
 
 
 
@@ -299,7 +300,7 @@ with tab2:
             
             # Procesar datos y crear el archivo de salida
             output_filename = uploaded_file.name.replace(".xlsx", f"_intervalo_de_{delta_time_m}_min.xlsx")
-            procesar_datos(df, aplicar_gradient, datos_columnas, out, output_filename)
+            procesar_datos(df, aplicar_gradient, datos_columnas, out)
 
             # Descargar el archivo procesado
             excel_bytes_io = io.BytesIO()
