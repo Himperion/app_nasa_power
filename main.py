@@ -1,188 +1,13 @@
 import streamlit as st
 import pandas as pd
-import folium, warnings, io
+import folium, warnings, io, yaml
 from streamlit_folium import st_folium
-from pynasapower.get_data import query_power
-from pynasapower.geometry import point
-from datetime import datetime, timedelta
-import random
-import numpy as np
-from folium.plugins import MousePosition
+
+from funtions import funTap1, funTap2, funTap3
 
 warnings.filterwarnings("ignore")
 
-# Inicializar session_state
-if 'form1_accept' not in st.session_state:
-    st.session_state.form1_accept = False
-
-# Funciones
-
-def name_file_head(name: str) -> str:
-    now = datetime.now()
-    return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
-
-def cal_rows(date_ini, date_end, steps):
-    date_delta = date_end - date_ini
-    cal_rows = int((date_delta.days * 1440)/steps)
-    return cal_rows
-
-def get_parameters_NASA_POWER(options: list) -> list:
-    parameters = []
-    for i in range(0, len(options), 1):
-        parameters.append(dict_parameters[options[i]][0])
-    return parameters
-
-def get_dataframe_NASA_POWER(latitude, longitude, start, end, parameters) -> pd.DataFrame:
-    dataframe = query_power(geometry=point(x=longitude, y=latitude, crs="EPSG:4326"),
-                            start=start,
-                            end=end,
-                            to_file=False,
-                            community="re",
-                            parameters=parameters,
-                            temporal_api="hourly",
-                            spatial_api="point")
-
-    list_columns, list_columns_drop = list(dataframe.columns), ["YEAR", "MO", "DY", "HR"]
-
-    for i in range(0, len(list_columns_drop), 1):
-        if list_columns_drop[i] in list_columns:
-            dataframe = dataframe.drop(columns=[list_columns_drop[i]])
-
-    for key in dict_parameters:
-        if dict_parameters[key][0] in list_columns:
-            dataframe = dataframe.rename(columns={dict_parameters[key][0]: dict_parameters[key][1]})
-
-    return dataframe
-
-def add_column_dates(dataframe, date_ini, rows, steps):
-    list_columns = list(dataframe.columns)
-    if not "dates (Y-M-D hh:mm:ss)" in list_columns:
-        dates = pd.date_range(start=date_ini,
-                              periods=rows,
-                              freq=pd.Timedelta(minutes=steps))
-
-        if dataframe.shape[0] >= dates.shape[0]:
-            dataframe = dataframe.head(rows)
-
-        if dataframe.shape[0] == dates.shape[0]:
-            dataframe["dates (Y-M-D hh:mm:ss)"] = dates
-            dataframe = dataframe[["dates (Y-M-D hh:mm:ss)"] + list_columns]
-
-    return dataframe
-
-def get_list_tabs_graph(list_data_columns, list_options_columns_name, list_options_columns_label):
-    list_tabs_graph_name, list_tabs_graph_label = [], []
-    for i in range(0, len(list_data_columns), 1):
-        if list_data_columns[i] in list_options_columns_name:
-            list_tabs_graph_name.append(list_data_columns[i])
-            list_tabs_graph_label.append(list_options_columns_label[list_options_columns_name.index(list_data_columns[i])])
-
-    return list_tabs_graph_name, list_tabs_graph_label
-
-def view_dataframe_information(dataframe):
-    list_options_columns_name = ["Load(W)",
-                                 "Gin(W/m²)",
-                                 "Tamb 2msnm(°C)",
-                                 "Vwind 10msnm(m/s)",
-                                 "Vwind 50msnm(m/s)"]
-
-    list_options_columns_label = ["💡 Load(W)",
-                                  "🌤️ Gin(W/m²)",
-                                  "🌡️ Tamb 2msnm(°C)",
-                                  "✈️ Vwind 10msnm(m/s)",
-                                  "✈️ Vwind 50msnm(m/s)"]
-
-    list_data_columns = list(dataframe.columns)
-
-    list_tabs_graph_name, list_tabs_graph_label = get_list_tabs_graph(list_data_columns,
-                                                                     list_options_columns_name,
-                                                                     list_options_columns_label)
-
-    tab_con1, tab_con2 = st.tabs(["📄 Tabla", "📈 Gráficas"])
-
-    with tab_con1:
-        st.dataframe(dataframe)
-    with tab_con2:
-        if len(list_tabs_graph_name) != 0:
-            if len(list_tabs_graph_name) == 1:
-                subtab_con1 = st.tabs(list_tabs_graph_label)
-                list_subtab_con = [subtab_con1[0]]
-            elif len(list_tabs_graph_name) == 2:
-                subtab_con1, subtab_con2 = st.tabs(list_tabs_graph_label)
-                list_subtab_con = [subtab_con1, subtab_con2]
-            elif len(list_tabs_graph_name) == 3:
-                subtab_con1, subtab_con2, subtab_con3 = st.tabs(list_tabs_graph_label)
-                list_subtab_con = [subtab_con1, subtab_con2, subtab_con3]
-            elif len(list_tabs_graph_name) == 4:
-                subtab_con1, subtab_con2, subtab_con3, subtab_con4 = st.tabs(list_tabs_graph_label)
-                list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4]
-
-            for i in range(0, len(list_subtab_con), 1):
-                with list_subtab_con[i]:
-                    st.line_chart(data=dataframe[[list_tabs_graph_name[i]]], y=list_tabs_graph_name[i])
-
-    return
-
-# Funciones adicionales para el procesamiento de datos
-constants_GD = {
-    "alpha": 0.1,
-    "tol": 0.001,
-    "iter_max": 1000
-}
-
-def gradient_descent_LR(value, n, variation, alpha, tol, iter_max):
-    err, iter_count = 100, 0
-    if np.any(value == 0.0):
-        return np.zeros(n)
-    else:
-        range_min, range_max = value * (1 - variation), value * (1 + variation)
-        xi = np.array([random.uniform(range_min, range_max) for i in range(n)])
-        while iter_count < iter_max and err > tol:
-            dL_xi = (2 / n) * (np.mean(xi) - value)
-            xi_predict = xi - alpha * dL_xi
-            err = abs(np.mean(xi_predict) - value)
-            xi = xi_predict
-            iter_count += 1
-        return xi_predict
-
-def crear_dataframe_nsamples(org, n_samples):
-    out = pd.DataFrame()
-    for col in org.columns:
-        out[col] = org[col].repeat(n_samples).reset_index(drop=True)
-    return out
-
-def modificar_inter_tiempo(out:pd.DataFrame, delta_time_m:int):
-    if "dates (Y-M-D hh:mm:ss)" in list(out.columns):
-        out["dates (Y-M-D hh:mm:ss)"] = pd.to_datetime(out["dates (Y-M-D hh:mm:ss)"] )
-        increment = timedelta(minutes=delta_time_m)
-        for index, row in out.iterrows():
-            if index == 0:
-                last_time = row["dates (Y-M-D hh:mm:ss)"]
-            else: 
-                last_time += increment
-                out.at[index,"dates (Y-M-D hh:mm:ss)"]=last_time
-    return out
-
-def aplicar_gradient(row):
-    new_rows = []
-    values_predict = {datos: gradient_descent_LR(value=row[datos], n=n_samples, variation=variation, **constants_GD) for datos in datos_columnas}
-    for i in range(n_samples):
-        new_row = [round(values_predict[datos][i], 4) for datos in datos_columnas]
-        new_rows.append(new_row)
-    return new_rows
-
-def procesar_datos(org, aplicar_gradient, datos_columnas, out):
-    aux = []
-    aux = np.vstack(org.apply(aplicar_gradient, axis=1).explode().to_numpy())
-    aux_df = pd.DataFrame(aux, columns=datos_columnas)
-    common_columns = aux_df.columns.intersection(out.columns)
-    out[common_columns] = aux_df[common_columns]
-    return out
-    
-
-
-
-# Main
+#%% global variables
 
 dict_parameters = {
     "Irradiancia (W/m^2)": ("ALLSKY_SFC_SW_DWN", "Gin(W/m²)"),
@@ -191,116 +16,313 @@ dict_parameters = {
     "Temperatura ambiente a 2 msnm (°C)": ("T2M", "Tamb 2msnm(°C)")
 }
 
+template = {
+    "directory": "files",
+    "name_file": "[Plantilla] - Temperatura de operación",
+    "format_file": "xlsx",
+    "description": "Irradiancia efectiva y Temperatura ambiente del sitio"
+}
+
+constants_GD = {
+    "alpha": 0.1,
+    "tol": 0.001,
+    "iter_max": 1000
+}
+
+NOCT = {
+    "description": "Temperatura de operaci\xF3n nominal de la celda",
+    "label": "NOCT",
+    "number_input": {
+        "format": None,
+        "max_value": 90,
+        "min_value": 1,
+        "step": None,
+        "value": 42
+    },
+    "unit": "°C",
+    "data_type": float
+}
+
+if 'dict_params' not in st.session_state:
+    st.session_state['dict_params'] = None
+
 options_multiselect = list(dict_parameters.keys())
+
+list_tabs = [
+    "🌤️ Datos climáticos y potencial energético",
+    "🌡️ Temperatura de operación",
+    "⏱️ Aumentar número de muestras"
+    ]
+
+selectDataEntryOptions = [
+    "🌎 Mapa interactivo",
+    "📌 Datos del sitio",
+    "💾 Cargar archivo de datos del sitio YAML"
+    ]
+
+selectCoordinateOptions = [
+    "Sistema sexagesimal GMS",
+    "Sistema decimal GD"
+    ]
 
 latitude, longitude, data_dates = None, None, None
 
-tab1, tab2 = st.tabs(["Datos Climáticos", "Cambiar intervalo de tiempo"])
-
-with tab1:
-    st.header(":mostly_sunny: Datos climáticos y potencial energético del sitio", divider=True)
-
-    click_map = folium.Map(location=[7.142056, -73.121231], zoom_start=18)
-    click_marker = folium.LatLngPopup()
-    click_map.add_child(click_marker)
-
-    with st.container(height=400):
-        map_local = st_folium(click_map, width=700, height=400)
-
-    if map_local and map_local["last_clicked"]:
-        coords = map_local["last_clicked"]
-        latitude = round(coords['lat'], 5)
-        longitude = round(coords['lng'], 5)
-
-        st.markdown(f"**:blue[Latitud:]** {latitude} **:blue[Longitud:]** {longitude}")
-
-    with st.form('form_1'):
-        col1, col2 = st.columns([0.5, 0.5])
-
-        date_ini = col1.date_input("Fecha de Inicio:")
-        date_end = col2.date_input("Fecha Final:")
-
-        options = st.multiselect("Seleccione los datos a cargar:",
-                                 options=options_multiselect,
-                                 placeholder="Seleccione una opción",
-                                 default=options_multiselect[0])
-        
-        form_1_submitted = st.form_submit_button("Aceptar")
-
-        if form_1_submitted:
-            if latitude is not None and longitude is not None:
-                if len(options) != 0:
-                    cal_rows = cal_rows(date_ini, date_end, steps=60)
-                    if cal_rows > 0:
-                        parameters = get_parameters_NASA_POWER(options)
-
-                        data = get_dataframe_NASA_POWER(latitude=latitude,
-                                                        longitude=longitude,
-                                                        start=date_ini,
-                                                        end=date_end,
-                                                        parameters=parameters)
-
-                        data_dates = add_column_dates(dataframe=data,
-                                                      date_ini=date_ini,
-                                                      rows=cal_rows,
-                                                      steps=60)
-                        
-                        with st.container():
-                            view_dataframe_information(data_dates)
-
-                        st.session_state.form1_accept = True
-                    else:
-                        st.warning("La {0} debe ser diferente a la {1}".format(":blue[Fecha de Inicio]", ":blue[Fecha final]"), icon="⚠️")
-                else:
-                    st.warning("Ingrese por lo menos una opción en :blue[Seleccione los datos a cargar]", icon="⚠️")
-            else:
-                st.warning("Ingrese una latitud y longitud en el mapa interactivo", icon="⚠️")
-
-            
-    if st.session_state.form1_accept and data_dates is not None:
-        excel_bytes_io = io.BytesIO()
-        data_dates.to_excel(excel_bytes_io, index=False)
-        excel_bytes_io.seek(0)
-
-        st.download_button(label="Descargar archivo",
-                           data=excel_bytes_io.read(),
-                           file_name=name_file_head("ALLSKY_SFC_SW_DWN.xlsx"))
-
- 
-
-with tab2:
-    st.header("Cargar archivo para variar el intervalo de tiempo")
+def tab1():
+    latitude, longitude = None, None
     
-    # Cargar archivo .xlsx
+    st.header(list_tabs[0])
+
+    dataEntryOptions = st.selectbox(label="Opciones de ingreso de datos", options=selectDataEntryOptions,
+                                      index=0, placeholder="Selecciona una opción")
+    
+    if dataEntryOptions == selectDataEntryOptions[0]:
+        click_map = folium.Map(location=[7.142056, -73.121231], zoom_start=18)
+        click_marker = folium.LatLngPopup()
+        click_map.add_child(click_marker)
+
+        with st.container(height=400):
+            map_local = st_folium(click_map, width=700, height=400)
+
+        if map_local and map_local["last_clicked"]:
+            coords = map_local["last_clicked"]
+            latitude = round(coords['lat'], 5)
+            longitude = round(coords['lng'], 5)
+
+            st.markdown(f"**:blue[Latitud:]** {latitude} **:blue[Longitud:]** {longitude}")
+
+    elif dataEntryOptions == selectDataEntryOptions[1]:
+        coordinate_options = st.selectbox(label="Opciones de ingreso de coordenadas geográficas",
+                                          options=selectCoordinateOptions,
+                                          index=1, placeholder="Selecciona una opción")
+        
+        with st.container(border=True):
+            st.markdown("🌎 **:blue[{0}:]**".format("Datos del sitio"))
+        
+            if coordinate_options == selectCoordinateOptions[0]:
+                with st.container(border=True):
+                    col1, col2, col3, col4 = st.columns(4)
+
+                    NS = col1.selectbox("**Latitud:**", ["N", "S"], index=0)
+                    lat_degrees = col2.number_input(label="Grados", min_value=0, value=7)
+                    lat_minutes = col3.number_input(label="Minutos", min_value=0, value=8)
+                    lat_seconds = col4.number_input(label="Segundos", min_value=0.0, format="%.4f", value=31.4016)
+
+                with st.container(border=True):
+                    col1, col2, col3, col4 = st.columns(4)
+
+                    EO = col1.selectbox("**Longitud:**", ["W", "E"], index=0)
+                    lon_degrees = col2.number_input(label="Grados", min_value=0, value=73)
+                    lon_minutes = col3.number_input(label="Minutos", min_value=0, value=7)
+                    lon_seconds = col4.number_input(label="Segundos", min_value=0.0, format="%.4f", value=16.4316)
+
+            elif coordinate_options == selectCoordinateOptions[1]:
+                col1, col2 = st.columns(2)
+
+                lat_input = col1.number_input('Ingrese la latitud:', min_value=-90.0, max_value=90.0, step=0.000001, format="%.6f", value=7.142056)
+                lon_input = col2.number_input('Ingrese la longitud:', min_value=-180.0, max_value=180.0, step=0.000001, format="%.6f", value=-73.121231)
+
+            else:
+                with st.container(border=True):
+                    uploadedFileYaml = st.file_uploader(label="Sube tu archivo YAML", type=["yaml", "yml"])
+
+    with st.form('form1'):
+        if dataEntryOptions == selectDataEntryOptions[0] or dataEntryOptions == selectDataEntryOptions[1]:
+            
+            with st.container(border=True):
+                st.markdown("🗓️ **:blue[{0}:]**".format("Estampa de tiempo"))
+
+                col1, col2 = st.columns(2)
+
+                date_ini = col1.date_input("Fecha de Inicio:")
+                date_end = col2.date_input("Fecha Final:")
+        
+        options = funTap1.get_expander_params(list_show_output=[key for key in dict_parameters])
+
+        submittedTab1 = st.form_submit_button("Aceptar")
+
+        if submittedTab1:
+            if dataEntryOptions == selectDataEntryOptions[0]:
+                if latitude is not None and longitude is not None:
+                    st.session_state['dict_params'] = {
+                        "latitude": latitude,
+                        "longitude": longitude,
+                        "start": date_ini,
+                        "end": date_end
+                        }
+                else:
+                    st.warning("Ingrese una latitud y longitud en el mapa interactivo", icon="⚠️")
+ 
+            elif dataEntryOptions == selectDataEntryOptions[1]:
+                if coordinate_options == selectCoordinateOptions[0]:
+                    st.session_state['dict_params'] = funTap1.GMS_2_GD({
+                        "lat_NS": NS,
+                        "lat_degrees": lat_degrees,
+                        "lat_minutes": lat_minutes,
+                        "lat_seconds": lat_seconds,
+                        "lon_EO": EO,
+                        "lon_degrees": lon_degrees,
+                        "lon_minutes": lon_minutes,
+                        "lon_seconds": lon_seconds,
+                        "date_ini": date_ini,
+                        "date_end": date_end,
+                        })
+                        
+                elif coordinate_options == selectCoordinateOptions[1]:
+                    st.session_state['dict_params'] = {
+                        "latitude": lat_input,
+                        "longitude": lon_input,
+                        "start": date_ini,
+                        "end": date_end
+                        }
+                    
+                elif dataEntryOptions == selectDataEntryOptions[2]:
+                    if uploadedFileYaml is not None:
+                        try:
+                            st.session_state['dict_params'] = yaml.safe_load(uploadedFileYaml)
+
+                        except:
+                            st.error("Error al cargar archivo **YAML** (.yaml)", icon="🚨")
+                    else:
+                        st.warning("Cargar archivo **YAML** (.yaml)", icon="⚠️")
+
+                
+    if st.session_state['dict_params'] is not None:   
+        dict_params = st.session_state['dict_params']
+        cal_rows = funTap1.cal_rows(dict_params["start"], dict_params["end"], steps=60)
+
+        if len(options) != 0:
+            if cal_rows > 0:
+                parameters = funTap1.get_parameters_NASA_POWER(options, dict_parameters)
+                    
+                data = funTap1.get_dataframe_NASA_POWER(dict_params,
+                                                        parameters,
+                                                        dict_parameters)
+                    
+                data = funTap1.add_column_dates(dataframe=data,
+                                                date_ini=dict_params["start"],
+                                                rows=cal_rows,
+                                                steps=60)
+                
+                sub_tab1, sub_tab2, sub_tab3 = st.tabs(["📋 Parámetros", "📈 Gráficas", "💾 Descargas"])
+
+                with sub_tab1:
+                    with st.container(border=True):
+                        st.dataframe(data)
+
+                with sub_tab2:
+                    with st.container(border=True):
+                        funTap1.view_dataframe_information(data)
+
+                with sub_tab3:
+                    excel = funTap1.to_excel(data)
+                    buffer_params = funTap1.get_bytes_yaml(dictionary=dict_params)
+
+                    with st.container(border=True):
+                        st.download_button(
+                            label="📄 Descargar **:blue[Datos climaticos y potencial energético del sitio]** del sitio **XLSX**",
+                            data=excel,
+                            file_name=funTap1.name_file_head(name="PES_params.xlsx"),
+                            mime="xlsx")
+                            
+                        st.download_button(
+                            label="📌 Descargar **:blue[archivo de datos]** del sitio **YAML**",
+                            data=buffer_params,
+                            file_name=funTap1.name_file_head(name="PES_data.yaml"),
+                            mime="text/yaml")
+                    
+                
+            else:
+                if cal_rows == 0:
+                    st.warning("La {0} debe ser diferente a la {1}".format(":blue[Fecha de Inicio]", ":blue[Fecha final]"), icon="⚠️")
+                if cal_rows < 0:
+                    st.warning("La {0} debe ser menor a la {1}".format(":blue[Fecha de Inicio]", ":blue[Fecha final]"), icon="⚠️")
+        else:
+            st.warning("Ingrese por lo menos una opción en {0}".format(":blue[Seleccione los datos a cargar]"), icon="⚠️")
+            
+    return
+        
+def tab2():
+    st.header(list_tabs[1])
+
+    with st.container(border=True):
+        label_Gef_Tamb = "Cargar archivo {0} y {1}".format("**Irradiancia efectiva** (m/s)", "**Temperatura ambiente** (°C).")
+        archive_Gef_Tamb = st.file_uploader(label=label_Gef_Tamb, type={"xlsx"})
+
+        funTap2.get_download_button(**template)
+
+    inputNOCT = funTap2.get_widget_number_input(label=funTap2.get_label_params(dict_param=NOCT),
+                                           variable=NOCT["number_input"])
+    
+    app_submitted_2 = st.button("Aceptar", key="app_submitted_2")
+
+    if app_submitted_2:
+        if archive_Gef_Tamb is not None:
+            check = False
+            try:
+                df_input = pd.read_excel(archive_Gef_Tamb)
+                df_input, check, columns_options_sel = funTap2.check_dataframe_input(dataframe=df_input, options=dict_parameters)
+            except:
+                st.error("Error al cargar archivo **Excel** (.xlsx)", icon="🚨")
+
+            if check:
+                df_output = funTap2.get_column_Toper(dataframe=df_input,
+                                                     options_sel=columns_options_sel,
+                                                     NOCT=inputNOCT,
+                                                     column_name="Toper(°C)")
+                
+                sub_tab1, sub_tab2 = st.tabs(["📋 Parámetros", "💾 Descargas"])
+
+                with sub_tab1:
+                    with st.container(border=True):
+                        st.dataframe(df_output)
+
+                with sub_tab2:
+                    excel = funTap2.to_excel(df_output)
+
+                    with st.container(border=True):
+                        st.download_button(
+                            label="📄 Descargar **:blue[Temperatura de operación del módulo]** del sitio **XLSX**",
+                            data=excel,
+                            file_name=funTap2.name_file_head(name="PES_addToper.xlsx"),
+                            mime="xlsx")
+
+            else:
+                st.error("Error al cargar archivo **Excel** (.xlsx)", icon="🚨")
+        else:
+            st.warning("Cargar archivo **Excel** (.xlsx)", icon="⚠️")
+
+    return
+
+def tab3():
+    st.header(list_tabs[2])
+    
     uploaded_file = st.file_uploader("Cargar archivo original", type=["xlsx"])
     if uploaded_file is not None:
-        # Leer el archivo Excel en un DataFrame de pandas
-        df = pd.read_excel(uploaded_file)
+        df_excel = pd.read_excel(uploaded_file)
 
-        # Mostrar el contenido del archivo
-        st.write("Contenido del archivo cargado:")
-        st.dataframe(df)
+        st.dataframe(df_excel)
 
-        # Parámetros de usuario para el procesamiento
         variation = st.slider("Seleccione el rango en que variarán los datos (%):", min_value=1, max_value=30) / 100
         delta_time_m = st.selectbox("Seleccione el intervalo de tiempo en minutos:", options=[5, 10, 15, 30])
 
-        # Filtrar opciones válidas basadas en dict_parameters
-        opciones_validas = [v[1] for k, v in dict_parameters.items() if v[1] in df.columns.tolist()]
+        opciones_validas = funTap3.valid_options(df_excel, dict_parameters)
+
+        # [C] función que ni idea que hace pero no hace nada XD
+        funTap3.valid_options(df_excel, dict_parameters)
 
         # Mostrar selector para columnas a procesar
-        datos_columnas = st.multiselect("Seleccione las columnas a procesar:", opciones_validas, default=opciones_validas)
+        data_columns = st.multiselect("Seleccione las columnas a procesar:", opciones_validas, default=opciones_validas)
 
         n_samples = 60 // delta_time_m
 
         # Procesar el archivo
         if st.button("Procesar Datos"):
-            out = crear_dataframe_nsamples(df, n_samples)
-            out = modificar_inter_tiempo(out, delta_time_m)
+            out = funTap3.create_dataframe_nsamples(df_excel, n_samples)
+            out = funTap3.modify_time_interval(out, delta_time_m)
             
             # Procesar datos y crear el archivo de salida
             output_filename = uploaded_file.name.replace(".xlsx", f"_intervalo_de_{delta_time_m}_min.xlsx")
-            procesar_datos(df, aplicar_gradient, datos_columnas, out)
+            funTap3.process_data(df_excel, data_columns, out)
 
             # Descargar el archivo procesado
             excel_bytes_io = io.BytesIO()
@@ -312,3 +334,12 @@ with tab2:
                                file_name=output_filename)
 
             st.success(f"Datos procesados y guardados en '{output_filename}'.")
+
+    return
+
+pg = st.navigation([
+    st.Page(tab1, title=list_tabs[0]),
+    st.Page(tab2, title=list_tabs[1]),
+    st.Page(tab3, title=list_tabs[2]),
+])
+pg.run()
