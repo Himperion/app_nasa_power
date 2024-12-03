@@ -7,13 +7,28 @@ from funtions import funTap1, funTap2, funTap3
 
 warnings.filterwarnings("ignore")
 
+#%% funtions
+
+@st.cache_data
+def get_outForm3(dict_params, constants_GD):
+
+    n_samples = 60 // dict_params['deltaTime_m']
+
+    out = funTap3.create_dataframe_nsamples(dict_params['df_excel'], n_samples)
+    out = funTap3.modify_time_interval(out, dict_params['deltaTime_m'])
+    out = funTap3.process_data(out, n_samples, dict_params, constants_GD)
+    excel_bytes = funTap3.get_excel_bytes(out)
+
+    return excel_bytes
+
 #%% global variables
 
 dict_parameters = {
     "Irradiancia (W/m^2)": ("ALLSKY_SFC_SW_DWN", "Gin(W/m²)"),
     "Velocidad del viento a 10 msnm (m/s)": ("WS10M", "Vwind 10msnm(m/s)"),
     "Velocidad del viento a 50 msnm (m/s)": ("WS50M", "Vwind 50msnm(m/s)"),
-    "Temperatura ambiente a 2 msnm (°C)": ("T2M", "Tamb 2msnm(°C)")
+    "Temperatura ambiente a 2 msnm (°C)": ("T2M", "Tamb 2msnm(°C)"),
+    "Temperatura de operación del modulo fotovoltaico ": ("Toper(°C)", "Toper_X(°C)")
 }
 
 template = {
@@ -43,8 +58,11 @@ NOCT = {
     "data_type": float
 }
 
-if 'dict_params' not in st.session_state:
-    st.session_state['dict_params'] = None
+if 'dict_paramsForm1' not in st.session_state:
+    st.session_state['dict_paramsForm1'] = None
+
+if 'dict_paramsForm3' not in st.session_state:
+    st.session_state['dict_paramsForm3'] = None
 
 options_multiselect = list(dict_parameters.keys())
 
@@ -55,7 +73,7 @@ list_tabs = [
     ]
 
 selectDataEntryOptions = [
-    "🌎 Mapa interactivo",
+    "🗺️ Mapa interactivo",
     "📌 Datos del sitio",
     "💾 Cargar archivo de datos del sitio YAML"
     ]
@@ -143,7 +161,7 @@ def tab1():
         if submittedTab1:
             if dataEntryOptions == selectDataEntryOptions[0]:
                 if latitude is not None and longitude is not None:
-                    st.session_state['dict_params'] = {
+                    st.session_state['dict_paramsForm1'] = {
                         "latitude": latitude,
                         "longitude": longitude,
                         "start": date_ini,
@@ -154,7 +172,7 @@ def tab1():
  
             elif dataEntryOptions == selectDataEntryOptions[1]:
                 if coordinate_options == selectCoordinateOptions[0]:
-                    st.session_state['dict_params'] = funTap1.GMS_2_GD({
+                    st.session_state['dict_paramsForm1'] = funTap1.GMS_2_GD({
                         "lat_NS": NS,
                         "lat_degrees": lat_degrees,
                         "lat_minutes": lat_minutes,
@@ -168,7 +186,7 @@ def tab1():
                         })
                         
                 elif coordinate_options == selectCoordinateOptions[1]:
-                    st.session_state['dict_params'] = {
+                    st.session_state['dict_paramsForm1'] = {
                         "latitude": lat_input,
                         "longitude": lon_input,
                         "start": date_ini,
@@ -178,7 +196,7 @@ def tab1():
                 elif dataEntryOptions == selectDataEntryOptions[2]:
                     if uploadedFileYaml is not None:
                         try:
-                            st.session_state['dict_params'] = yaml.safe_load(uploadedFileYaml)
+                            st.session_state['dict_paramsForm1'] = yaml.safe_load(uploadedFileYaml)
 
                         except:
                             st.error("Error al cargar archivo **YAML** (.yaml)", icon="🚨")
@@ -186,8 +204,8 @@ def tab1():
                         st.warning("Cargar archivo **YAML** (.yaml)", icon="⚠️")
 
                 
-    if st.session_state['dict_params'] is not None:   
-        dict_params = st.session_state['dict_params']
+    if st.session_state['dict_paramsForm1'] is not None:   
+        dict_params = st.session_state['dict_paramsForm1']
         cal_rows = funTap1.cal_rows(dict_params["start"], dict_params["end"], steps=60)
 
         if len(options) != 0:
@@ -295,46 +313,49 @@ def tab2():
 
 def tab3():
     st.header(list_tabs[2])
+
+    with st.container(border=True):
+        uploaded_file = st.file_uploader("Seleccione los datos a cargar", type=["xlsx"])
+        
+        if uploaded_file is not None:
+            df_excel = pd.read_excel(uploaded_file)
+
+            with st.expander(f'📄 Ver dataset **:blue[{uploaded_file.name}]**'):
+                st.dataframe(df_excel)
+
+            with st.form('form2'):
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    variation = st.slider("Seleccione el rango en que variarán los datos (%):", min_value=0, max_value=30) / 100
+                with col2:
+                    deltaTime_m = st.selectbox("Seleccione el intervalo de tiempo en minutos:", options=[5, 10, 15, 30])
+
+                opciones_validas = funTap3.valid_options(df_excel, dict_parameters)
+
+                dataColumns = st.multiselect("Seleccione las columnas a procesar:", opciones_validas, default=opciones_validas)
+        
+                submittedTab3 = st.form_submit_button("Aceptar")
+
+                if submittedTab3:
+                    st.session_state['dict_paramsForm3'] = {
+                        "df_excel": df_excel,
+                        "variation": variation,
+                        "deltaTime_m": deltaTime_m,
+                        "dataColumns": dataColumns
+                    }
+
+    if st.session_state['dict_paramsForm3'] is not None: 
+
+        dict_paramsForm3 = st.session_state['dict_paramsForm3']
+        outputFilename = funTap1.name_file_head(f"{uploaded_file.name.split('.')[0]}_min{dict_paramsForm3['deltaTime_m']}.xlsx")
+
+        excel_bytes = get_outForm3(dict_paramsForm3, constants_GD)
+
+        st.download_button(label="Descargar archivo procesado",
+                           data=excel_bytes.read(),
+                           file_name=outputFilename)
     
-    uploaded_file = st.file_uploader("Cargar archivo original", type=["xlsx"])
-    if uploaded_file is not None:
-        df_excel = pd.read_excel(uploaded_file)
-
-        st.dataframe(df_excel)
-
-        variation = st.slider("Seleccione el rango en que variarán los datos (%):", min_value=1, max_value=30) / 100
-        delta_time_m = st.selectbox("Seleccione el intervalo de tiempo en minutos:", options=[5, 10, 15, 30])
-
-        opciones_validas = funTap3.valid_options(df_excel, dict_parameters)
-
-        # [C] función que ni idea que hace pero no hace nada XD
-        funTap3.valid_options(df_excel, dict_parameters)
-
-        # Mostrar selector para columnas a procesar
-        data_columns = st.multiselect("Seleccione las columnas a procesar:", opciones_validas, default=opciones_validas)
-
-        n_samples = 60 // delta_time_m
-
-        # Procesar el archivo
-        if st.button("Procesar Datos"):
-            out = funTap3.create_dataframe_nsamples(df_excel, n_samples)
-            out = funTap3.modify_time_interval(out, delta_time_m)
-            
-            # Procesar datos y crear el archivo de salida
-            output_filename = uploaded_file.name.replace(".xlsx", f"_intervalo_de_{delta_time_m}_min.xlsx")
-            funTap3.process_data(df_excel, data_columns, out, n_samples, variation,  alpha=constants_GD["alpha"], tol=constants_GD["tol"], iter_max=constants_GD["iter_max"])
-
-            # Descargar el archivo procesado
-            excel_bytes_io = io.BytesIO()
-            out.to_excel(excel_bytes_io, index=False)
-            excel_bytes_io.seek(0)
-            
-            st.download_button(label="Descargar archivo procesado",
-                               data=excel_bytes_io.read(),
-                               file_name=output_filename)
-
-            st.success(f"Datos procesados y guardados en '{output_filename}'.")
-
     return
 
 pg = st.navigation([
