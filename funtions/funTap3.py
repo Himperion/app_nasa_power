@@ -24,10 +24,10 @@ def gradient_descent_LR(value, n, variation, alpha, tol, iter_max):
             iter_count += 1
         return xi_predict
 
-def create_dataframe_nsamples(org, n_samples):
+def create_dataframe_nsamples(df_excel, n_samples):
     out = pd.DataFrame()
-    for col in org.columns:
-        out[col] = org[col].repeat(n_samples).reset_index(drop=True)
+    for col in df_excel.columns:
+        out[col] = df_excel[col].repeat(n_samples).reset_index(drop=True)
     return out
 
 def modify_time_interval(out:pd.DataFrame, delta_time_m:int):
@@ -42,19 +42,18 @@ def modify_time_interval(out:pd.DataFrame, delta_time_m:int):
                 out.at[index,"dates (Y-M-D hh:mm:ss)"]=last_time
     return out
 
-def aplicar_gradient(row, n_samples, variation, data_columns, constants_GD):
+def aplicar_gradient(row, n_samples, alpha, tol, iter_max, variation, data_columns):
     new_rows = []
-    values_predict = {datos: gradient_descent_LR(value=row[datos], n=n_samples, variation=variation, **constants_GD) for datos in data_columns}
+    values_predict = {datos: gradient_descent_LR(row[datos], n_samples, variation, alpha, tol, iter_max) for datos in data_columns}
     for i in range(n_samples):
         new_row = [round(values_predict[datos][i], 4) for datos in data_columns]
         new_rows.append(new_row)
 
     return new_rows
 
-def process_data(org, datos_columnas, out):
-    aux = []
-    aux = np.vstack(org.apply(aplicar_gradient, axis=1).explode().to_numpy())
-    aux_df = pd.DataFrame(aux, columns=datos_columnas)
+def process_data(df_excel, data_columns, out, n_samples, variation, alpha, tol, iter_max):
+    aux = np.vstack(df_excel.apply(lambda row: aplicar_gradient(row, n_samples, alpha, tol, iter_max, variation, data_columns), axis=1).explode().to_numpy())
+    aux_df = pd.DataFrame(aux, columns=data_columns)
     common_columns = aux_df.columns.intersection(out.columns)
     out[common_columns] = aux_df[common_columns]
 

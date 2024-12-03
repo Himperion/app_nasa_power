@@ -322,7 +322,7 @@ def tab3():
             
             # Procesar datos y crear el archivo de salida
             output_filename = uploaded_file.name.replace(".xlsx", f"_intervalo_de_{delta_time_m}_min.xlsx")
-            funTap3.process_data(df_excel, data_columns, out)
+            funTap3.process_data(df_excel, data_columns, out, n_samples, variation,  alpha=constants_GD["alpha"], tol=constants_GD["tol"], iter_max=constants_GD["iter_max"])
 
             # Descargar el archivo procesado
             excel_bytes_io = io.BytesIO()
