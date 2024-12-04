@@ -137,7 +137,6 @@ def view_dataframe_information(dataframe):
 
     return
 
-
 def get_bytes_yaml(dictionary: dict):
 
     yaml_data = yaml.dump(dictionary, allow_unicode=True)
@@ -161,111 +160,48 @@ def name_file_head(name: str) -> str:
     now = dt.datetime.now()
     return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
 
+def viewInformation(data, dict_params):
 
-"""
-def name_file_head(name: str) -> str:
-    now = datetime.now()
-    return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
+    sub_tab1, sub_tab2, sub_tab3 = st.tabs(["📋 Parámetros", "📈 Gráficas", "💾 Descargas"])
 
-def cal_rows(date_ini, date_end, steps):
-    date_delta = date_end - date_ini
-    cal_rows = int((date_delta.days * 1440)/steps)
-    return cal_rows
+    with sub_tab1:
+        with st.container(border=True):
+            st.dataframe(data)
 
-def get_parameters_NASA_POWER(options: list, dict_parameters: dict) -> list:
-    parameters = []
-    for i in range(0, len(options), 1):
-        parameters.append(dict_parameters[options[i]][0])
-    return parameters
+    with sub_tab2:
+        with st.container(border=True):
+            view_dataframe_information(data)
 
-def get_dataframe_NASA_POWER(latitude, longitude, start, end, parameters, dict_parameters: dict) -> pd.DataFrame:
-    dataframe = query_power(geometry=point(x=longitude, y=latitude, crs="EPSG:4326"),
-                            start=start,
-                            end=end,
-                            to_file=False,
-                            community="re",
-                            parameters=parameters,
-                            temporal_api="hourly",
-                            spatial_api="point")
+    with sub_tab3:
+        excel = to_excel(data)
+        buffer_params = get_bytes_yaml(dictionary=dict_params)
 
-    list_columns, list_columns_drop = list(dataframe.columns), ["YEAR", "MO", "DY", "HR"]
+        with st.container(border=True):
+            st.download_button(
+                label="📄 Descargar **:blue[Datos climaticos y potencial energético del sitio]** del sitio **XLSX**",
+                data=excel,
+                file_name=name_file_head(name="PES_params.xlsx"),
+                mime="xlsx")
+                
+            st.download_button(
+                label="📌 Descargar **:blue[archivo de datos]** del sitio **YAML**",
+                data=buffer_params,
+                file_name=name_file_head(name="PES_data.yaml"),
+                mime="text/yaml")
+    
+    return
 
-    for i in range(0, len(list_columns_drop), 1):
-        if list_columns_drop[i] in list_columns:
-            dataframe = dataframe.drop(columns=[list_columns_drop[i]])
+def get_outForm1(dict_params, dict_parameters, options, cal_rows):
 
-    for key in dict_parameters:
-        if dict_parameters[key][0] in list_columns:
-            dataframe = dataframe.rename(columns={dict_parameters[key][0]: dict_parameters[key][1]})
-
-    return dataframe
-
-def add_column_dates(dataframe: pd.DataFrame, date_ini, rows, steps) -> pd.DataFrame:
-    list_columns = list(dataframe.columns)
-    if not "dates (Y-M-D hh:mm:ss)" in list_columns:
-        dates = pd.date_range(start=date_ini,
-                              periods=rows,
-                              freq=pd.Timedelta(minutes=steps))
-
-        if dataframe.shape[0] >= dates.shape[0]:
-            dataframe = dataframe.head(rows)
-
-        if dataframe.shape[0] == dates.shape[0]:
-            dataframe["dates (Y-M-D hh:mm:ss)"] = dates
-            dataframe = dataframe[["dates (Y-M-D hh:mm:ss)"] + list_columns]
-
-    return dataframe
-
-def get_list_tabs_graph(list_data_columns, list_options_columns_name, list_options_columns_label):
-    list_tabs_graph_name, list_tabs_graph_label = [], []
-    for i in range(0, len(list_data_columns), 1):
-        if list_data_columns[i] in list_options_columns_name:
-            list_tabs_graph_name.append(list_data_columns[i])
-            list_tabs_graph_label.append(list_options_columns_label[list_options_columns_name.index(list_data_columns[i])])
-
-    return list_tabs_graph_name, list_tabs_graph_label
-
-def view_dataframe_information(dataframe):
-    list_options_columns_name = ["Load(W)",
-                                 "Gin(W/m²)",
-                                 "Tamb 2msnm(°C)",
-                                 "Vwind 10msnm(m/s)",
-                                 "Vwind 50msnm(m/s)"]
-
-    list_options_columns_label = ["💡 Load(W)",
-                                  "🌤️ Gin(W/m²)",
-                                  "🌡️ Tamb 2msnm(°C)",
-                                  "✈️ Vwind 10msnm(m/s)",
-                                  "✈️ Vwind 50msnm(m/s)"]
-
-    list_data_columns = list(dataframe.columns)
-
-    list_tabs_graph_name, list_tabs_graph_label = get_list_tabs_graph(list_data_columns,
-                                                                     list_options_columns_name,
-                                                                     list_options_columns_label)
-
-    tab_con1, tab_con2 = st.tabs(["📄 Tabla", "📈 Gráficas"])
-
-    with tab_con1:
-        st.dataframe(dataframe)
-    with tab_con2:
-        if len(list_tabs_graph_name) != 0:
-            if len(list_tabs_graph_name) == 1:
-                subtab_con1 = st.tabs(list_tabs_graph_label)
-                list_subtab_con = [subtab_con1[0]]
-            elif len(list_tabs_graph_name) == 2:
-                subtab_con1, subtab_con2 = st.tabs(list_tabs_graph_label)
-                list_subtab_con = [subtab_con1, subtab_con2]
-            elif len(list_tabs_graph_name) == 3:
-                subtab_con1, subtab_con2, subtab_con3 = st.tabs(list_tabs_graph_label)
-                list_subtab_con = [subtab_con1, subtab_con2, subtab_con3]
-            elif len(list_tabs_graph_name) == 4:
-                subtab_con1, subtab_con2, subtab_con3, subtab_con4 = st.tabs(list_tabs_graph_label)
-                list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4]
-
-            for i in range(0, len(list_subtab_con), 1):
-                with list_subtab_con[i]:
-                    st.line_chart(data=dataframe[[list_tabs_graph_name[i]]], y=list_tabs_graph_name[i])
+    parameters = get_parameters_NASA_POWER(options, dict_parameters)
+                    
+    data = get_dataframe_NASA_POWER(dict_params, parameters, dict_parameters)
+                    
+    data = add_column_dates(dataframe=data, 
+                            date_ini=dict_params["start"],
+                            rows=cal_rows,
+                            steps=60)
+    
+    viewInformation(data, dict_params)
 
     return
-"""

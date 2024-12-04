@@ -7,7 +7,7 @@ from funtions import funTap1, funTap2, funTap3
 
 warnings.filterwarnings("ignore")
 
-#%% funtions
+#%% cache_data
 
 @st.cache_data
 def get_outForm3(dict_params, constants_GD):
@@ -28,7 +28,12 @@ dict_parameters = {
     "Velocidad del viento a 10 msnm (m/s)": ("WS10M", "Vwind 10msnm(m/s)"),
     "Velocidad del viento a 50 msnm (m/s)": ("WS50M", "Vwind 50msnm(m/s)"),
     "Temperatura ambiente a 2 msnm (°C)": ("T2M", "Tamb 2msnm(°C)"),
-    "Temperatura de operación del modulo fotovoltaico ": ("Toper(°C)", "Toper_X(°C)")
+    "Temperatura de operación del modulo fotovoltaico": ("Toper(°C)", "Toper_X(°C)")
+}
+
+items_options_columns_df = {
+    "Geff" : ("Gef(W/m^2)", "Gef(W/m²)", "Gin(W/m²)", "Gin(W/m^2)"),
+    "Tamb" : ("Tamb(°C)", "Tamb 2msnm(°C)")
 }
 
 template = {
@@ -154,7 +159,7 @@ def tab1():
                 date_ini = col1.date_input("Fecha de Inicio:")
                 date_end = col2.date_input("Fecha Final:")
         
-        options = funTap1.get_expander_params(list_show_output=[key for key in dict_parameters])
+        options = funTap1.get_expander_params(list_show_output=[key for key in dict_parameters if key != "Temperatura de operación del modulo fotovoltaico"])
 
         submittedTab1 = st.form_submit_button("Aceptar")
 
@@ -162,8 +167,8 @@ def tab1():
             if dataEntryOptions == selectDataEntryOptions[0]:
                 if latitude is not None and longitude is not None:
                     st.session_state['dict_paramsForm1'] = {
-                        "latitude": latitude,
-                        "longitude": longitude,
+                        "latitude": float(latitude),
+                        "longitude": float(longitude),
                         "start": date_ini,
                         "end": date_end
                         }
@@ -210,45 +215,16 @@ def tab1():
 
         if len(options) != 0:
             if cal_rows > 0:
-                parameters = funTap1.get_parameters_NASA_POWER(options, dict_parameters)
-                    
-                data = funTap1.get_dataframe_NASA_POWER(dict_params,
-                                                        parameters,
-                                                        dict_parameters)
-                    
-                data = funTap1.add_column_dates(dataframe=data,
-                                                date_ini=dict_params["start"],
-                                                rows=cal_rows,
-                                                steps=60)
-                
-                sub_tab1, sub_tab2, sub_tab3 = st.tabs(["📋 Parámetros", "📈 Gráficas", "💾 Descargas"])
+            
+                dict_outForm1 = {
+                    "dict_params" : dict_params,
+                    "dict_parameters": dict_parameters,
+                    "options": options,
+                    "cal_rows": cal_rows
+                }
 
-                with sub_tab1:
-                    with st.container(border=True):
-                        st.dataframe(data)
-
-                with sub_tab2:
-                    with st.container(border=True):
-                        funTap1.view_dataframe_information(data)
-
-                with sub_tab3:
-                    excel = funTap1.to_excel(data)
-                    buffer_params = funTap1.get_bytes_yaml(dictionary=dict_params)
-
-                    with st.container(border=True):
-                        st.download_button(
-                            label="📄 Descargar **:blue[Datos climaticos y potencial energético del sitio]** del sitio **XLSX**",
-                            data=excel,
-                            file_name=funTap1.name_file_head(name="PES_params.xlsx"),
-                            mime="xlsx")
-                            
-                        st.download_button(
-                            label="📌 Descargar **:blue[archivo de datos]** del sitio **YAML**",
-                            data=buffer_params,
-                            file_name=funTap1.name_file_head(name="PES_data.yaml"),
-                            mime="text/yaml")
-                    
-                
+                funTap1.get_outForm1(**dict_outForm1)
+     
             else:
                 if cal_rows == 0:
                     st.warning("La {0} debe ser diferente a la {1}".format(":blue[Fecha de Inicio]", ":blue[Fecha final]"), icon="⚠️")
@@ -260,6 +236,9 @@ def tab1():
     return
         
 def tab2():
+    st.session_state['dict_paramsForm1'] = None
+    st.session_state['dict_paramsForm3'] = None
+
     st.header(list_tabs[1])
 
     with st.container(border=True):
@@ -276,9 +255,10 @@ def tab2():
     if app_submitted_2:
         if archive_Gef_Tamb is not None:
             check = False
+        
             try:
                 df_input = pd.read_excel(archive_Gef_Tamb)
-                df_input, check, columns_options_sel = funTap2.check_dataframe_input(dataframe=df_input, options=dict_parameters)
+                df_input, check, columns_options_sel = funTap2.check_dataframe_input(dataframe=df_input, options=items_options_columns_df)
             except:
                 st.error("Error al cargar archivo **Excel** (.xlsx)", icon="🚨")
 
@@ -303,7 +283,7 @@ def tab2():
                             data=excel,
                             file_name=funTap2.name_file_head(name="PES_addToper.xlsx"),
                             mime="xlsx")
-
+            
             else:
                 st.error("Error al cargar archivo **Excel** (.xlsx)", icon="🚨")
         else:
@@ -312,6 +292,8 @@ def tab2():
     return
 
 def tab3():
+    st.session_state['dict_paramsForm1'] = None
+
     st.header(list_tabs[2])
 
     with st.container(border=True):
