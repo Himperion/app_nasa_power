@@ -3,14 +3,12 @@ import pandas as pd
 import datetime as dt
 from pynasapower.get_data import query_power
 from pynasapower.geometry import point
-from io import BytesIO
-import yaml
+import yaml, io
 
 
-def get_expander_params(list_show_output):
+def get_multiselect_params(list_show_output):
 
-    with st.expander(label="🪛 **{0}**".format("Personalizar parámetros de salida")): 
-        show_output = st.multiselect(label="Seleccionar parámetros", options=list_show_output, default=list_show_output)
+    show_output = st.multiselect(label=f"🪛 **Personalizar parámetros de salida**", options=list_show_output, default=list_show_output)
 
     return show_output
 
@@ -40,14 +38,19 @@ def cal_rows(date_ini, date_end, steps):
 
     return cal_rows
 
+def get_parameterOptions(dict_parameters: dict) -> list:
+
+    parameterOptions = []
+
+    for key in dict_parameters:
+        if dict_parameters[key]["NASALabel"] is not None:
+            parameterOptions.append(key)
+
+    return parameterOptions
+
 def get_parameters_NASA_POWER(options: list, dict_parameters: dict) -> list:
 
-    parameters = []
-
-    for i in range(0,len(options),1):
-        parameters.append(dict_parameters[options[i]][0])
-
-    return parameters
+    return [dict_parameters[option]["NASALabel"] for option in options]
 
 def get_dataframe_NASA_POWER(dict_params: dict, parameters: list, dict_parameters: dict) -> pd.DataFrame:
 
@@ -67,8 +70,8 @@ def get_dataframe_NASA_POWER(dict_params: dict, parameters: list, dict_parameter
             dataframe = dataframe.drop(columns=[list_columns_drop[i]])
 
     for key in dict_parameters:
-        if dict_parameters[key][0] in list_columns:
-            dataframe = dataframe.rename(columns={dict_parameters[key][0]: dict_parameters[key][1]})
+        if dict_parameters[key]["NASALabel"] in list_columns:
+            dataframe = dataframe.rename(columns={dict_parameters[key]["NASALabel"]: dict_parameters[key]["columnLabel"]})
 
     return dataframe
 
@@ -99,23 +102,14 @@ def get_list_tabs_graph(list_data_columns: list, list_options_columns_name: list
 
     return list_tabs_graph_name, list_tabs_graph_label
 
-def view_dataframe_information(dataframe):
+def view_dataframe_information(dataframe: pd.DataFrame, dict_parameters: dict):
 
-    list_options_columns_name = ["Load(W)",
-                                 "Gin(W/m²)",
-                                 "Tamb 2msnm(°C)",
-                                 "Vwind 10msnm(m/s)",
-                                 "Vwind 50msnm(m/s)"]
-
-    list_options_columns_label = ["💡 Load(W)",
-                                  "🌤️ Gin(W/m²)",
-                                  "🌡️ Tamb 2msnm(°C)",
-                                  "✈️ Vwind 10msnm(m/s)",
-                                  "✈️ Vwind 50msnm(m/s)"]
+    listOptionsColumnsName = [dict_parameters[key]["columnLabel"] for key in dict_parameters]
+    listOptionsColumnsLabel = [f"{dict_parameters[key]['emoji']} {dict_parameters[key]['columnLabel']}" for key in dict_parameters]
 
     list_tabs_graph_name, list_tabs_graph_label = get_list_tabs_graph(list(dataframe.columns),
-                                                                      list_options_columns_name,
-                                                                      list_options_columns_label)
+                                                                      listOptionsColumnsName,
+                                                                      listOptionsColumnsLabel)
      
     if len(list_tabs_graph_name) != 0:
         if len(list_tabs_graph_name) == 1:
@@ -130,6 +124,12 @@ def view_dataframe_information(dataframe):
         elif len(list_tabs_graph_name) == 4:
             subtab_con1, subtab_con2, subtab_con3, subtab_con4 = st.tabs(list_tabs_graph_label)
             list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4]
+        elif len(list_tabs_graph_name) == 5:
+            subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5 = st.tabs(list_tabs_graph_label)
+            list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5]
+        elif len(list_tabs_graph_name) == 6:
+            subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6 = st.tabs(list_tabs_graph_label)
+            list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6]
 
         for i in range(0,len(list_subtab_con),1):
             with list_subtab_con[i]:
@@ -141,14 +141,14 @@ def get_bytes_yaml(dictionary: dict):
 
     yaml_data = yaml.dump(dictionary, allow_unicode=True)
 
-    buffer = BytesIO()
+    buffer = io.BytesIO()
     buffer.write(yaml_data.encode('utf-8'))
     buffer.seek(0)
 
     return buffer
 
 def to_excel(df: pd.DataFrame):
-    output = BytesIO()
+    output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Sheet1")
     
@@ -160,35 +160,32 @@ def name_file_head(name: str) -> str:
     now = dt.datetime.now()
     return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
 
-def viewInformation(data, dict_params):
+def viewInformation(df_data: pd.DataFrame, dict_params: dict, dict_download: dict, dict_parameters):
 
     sub_tab1, sub_tab2, sub_tab3 = st.tabs(["📋 Parámetros", "📈 Gráficas", "💾 Descargas"])
 
     with sub_tab1:
         with st.container(border=True):
-            st.dataframe(data)
+            st.dataframe(df_data)
 
     with sub_tab2:
         with st.container(border=True):
-            view_dataframe_information(data)
+            view_dataframe_information(df_data, dict_parameters)
 
     with sub_tab3:
-        excel = to_excel(data)
-        buffer_params = get_bytes_yaml(dictionary=dict_params)
-
         with st.container(border=True):
-            st.download_button(
-                label="📄 Descargar **:blue[Datos climaticos y potencial energético del sitio]** del sitio **XLSX**",
-                data=excel,
-                file_name=name_file_head(name="PES_params.xlsx"),
-                mime="xlsx")
+            for key, value in dict_download.items():
+                if value['type'] == 'xlsx':
+                    bytesFile = to_excel(df_data)
+                elif value['type'] == 'yaml':
+                    bytesFile = get_bytes_yaml(dict_params)
+
+                st.download_button(
+                    label=f"{value['emoji']} Descargar **:blue[{value['label']}] {value['type'].upper()}**",
+                    data=bytesFile,
+                    file_name=name_file_head(name=f"{value['fileName']}.{value['type']}"),
+                    mime=value['nime'])
                 
-            st.download_button(
-                label="📌 Descargar **:blue[archivo de datos]** del sitio **YAML**",
-                data=buffer_params,
-                file_name=name_file_head(name="PES_data.yaml"),
-                mime="text/yaml")
-    
     return
 
 def get_outForm1(dict_params, dict_parameters, options, cal_rows):
@@ -202,6 +199,23 @@ def get_outForm1(dict_params, dict_parameters, options, cal_rows):
                             rows=cal_rows,
                             steps=60)
     
-    viewInformation(data, dict_params)
+    dict_download = {
+        "Xlsx": {
+            "label": "Datos climaticos y potencial energético del sitio",
+            "type": "xlsx",
+            "fileName": "PES_params",
+            "nime": "xlsx",
+            "emoji": "📄"
+            },
+        "Yaml": {
+            "label": "Archivo de datos del sitio",
+            "type": "yaml",
+            "fileName": "PES_data",
+            "nime": "text/yaml",
+            "emoji": "📌"
+        }  
+    }
+    
+    viewInformation(data, dict_params, dict_download, dict_parameters)
 
     return

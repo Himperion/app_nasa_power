@@ -3,14 +3,14 @@ import pandas as pd
 import folium, warnings, io, yaml
 from streamlit_folium import st_folium
 
-from funtions import funTap1, funTap2, funTap3
+from funtions import funTap1, funTap2, funTap3, funTap4
 
 warnings.filterwarnings("ignore")
 
 #%% cache_data
 
 @st.cache_data
-def get_outForm3(dict_params, constants_GD):
+def get_outForm4(dict_params, constants_GD):
 
     n_samples = 60 // dict_params['deltaTime_m']
 
@@ -24,11 +24,36 @@ def get_outForm3(dict_params, constants_GD):
 #%% global variables
 
 dict_parameters = {
-    "Irradiancia (W/m^2)": ("ALLSKY_SFC_SW_DWN", "Gin(W/m²)"),
-    "Velocidad del viento a 10 msnm (m/s)": ("WS10M", "Vwind 10msnm(m/s)"),
-    "Velocidad del viento a 50 msnm (m/s)": ("WS50M", "Vwind 50msnm(m/s)"),
-    "Temperatura ambiente a 2 msnm (°C)": ("T2M", "Tamb 2msnm(°C)"),
-    "Temperatura de operación del modulo fotovoltaico": ("Toper(°C)", "Toper_X(°C)")
+    "Irradiancia (W/m^2)": {
+        "columnLabel": "Gin(W/m²)",
+        "NASALabel": "ALLSKY_SFC_SW_DWN",
+        "emoji": "🌤️"
+    },
+    "Velocidad del viento a 10 msnm (m/s)": {
+        "columnLabel": "Vwind 10msnm(m/s)",
+        "NASALabel": "WS10M",
+        "emoji": "✈️"
+    },
+    "Velocidad del viento a 50 msnm (m/s)": {
+        "columnLabel": "Vwind 50msnm(m/s)",
+        "NASALabel": "WS50M",
+        "emoji": "✈️"
+    },
+    "Temperatura ambiente a 2 msnm (°C)": {
+        "columnLabel": "Tamb 2msnm(°C)",
+        "NASALabel": "T2M",
+        "emoji": "🌡️"
+    },
+    "Temperatura de operación del modulo fotovoltaico": {
+        "columnLabel": "Toper(°C)",
+        "NASALabel": None,
+        "emoji": "🌡️"
+    },
+    "Perfil de demanda eléctrica": {
+        "columnLabel": "Load(kW)",
+        "NASALabel": None,
+        "emoji": "🔌"
+    }
 }
 
 items_options_columns_df = {
@@ -67,6 +92,9 @@ if 'dict_paramsForm1' not in st.session_state:
     st.session_state['dict_paramsForm1'] = None
 
 if 'dict_paramsForm3' not in st.session_state:
+    st.session_state['dict_paramsForm3'] = None
+
+if 'dict_paramsForm4' not in st.session_state:
     st.session_state['dict_paramsForm4'] = None
 
 options_multiselect = list(dict_parameters.keys())
@@ -92,6 +120,7 @@ selectCoordinateOptions = [
 latitude, longitude, data_dates = None, None, None
 
 def tab1():
+    st.session_state['dict_paramsForm3'] = None
     st.session_state['dict_paramsForm4'] = None
 
     latitude, longitude = None, None
@@ -99,7 +128,7 @@ def tab1():
     st.header(list_tabs[0])
 
     dataEntryOptions = st.selectbox(label="Opciones de ingreso de datos", options=selectDataEntryOptions,
-                                      index=0, placeholder="Selecciona una opción")
+                                    index=0, placeholder="Selecciona una opción")
     
     if dataEntryOptions == selectDataEntryOptions[0]:
         click_map = folium.Map(location=[7.142056, -73.121231], zoom_start=18)
@@ -161,8 +190,9 @@ def tab1():
 
                 date_ini = col1.date_input("Fecha de Inicio:")
                 date_end = col2.date_input("Fecha Final:")
-        
-        options = funTap1.get_expander_params(list_show_output=[key for key in dict_parameters if key != "Temperatura de operación del modulo fotovoltaico"])
+
+        parameterOptions = funTap1.get_parameterOptions(dict_parameters)
+        options = funTap1.get_multiselect_params(list_show_output=parameterOptions)
 
         submittedTab1 = st.form_submit_button("Aceptar")
 
@@ -240,6 +270,7 @@ def tab1():
         
 def tab2():
     st.session_state['dict_paramsForm1'] = None
+    st.session_state['dict_paramsForm3'] = None
     st.session_state['dict_paramsForm4'] = None
 
     st.header(list_tabs[1])
@@ -271,13 +302,17 @@ def tab2():
                                                      NOCT=inputNOCT,
                                                      column_name="Toper(°C)")
                 
-                sub_tab1, sub_tab2 = st.tabs(["📋 Parámetros", "💾 Descargas"])
+                sub_tab1, sub_tab2, sub_tab3 = st.tabs(["📋 Parámetros", "📈 Gráficas", "💾 Descargas"])
 
                 with sub_tab1:
                     with st.container(border=True):
                         st.dataframe(df_output)
 
                 with sub_tab2:
+                    with st.container(border=True):
+                        funTap2.view_dataframe_information(df_output, dict_parameters)
+
+                with sub_tab3:
                     excel = funTap2.to_excel(df_output)
 
                     with st.container(border=True):
@@ -329,20 +364,28 @@ def tab3():
 
                     if checkTime:
                         df_loadPU = pd.read_excel('files/[Plantilla] - CargaPU ESSA.xlsx')
-
                         df_data = funTap3.addLoadData(df_data, df_loadPU, typeLoad, kWh_day, timeInfo)
-                        
-                        st.dataframe(df_data)
+
+                        st.session_state['dict_paramsForm3'] = {
+                            "df_data": df_data,
+                            }
+
                 except:
                     st.error("Error al cargar archivo **EXCEL** (.xlsx)", icon="🚨")
 
             else:
                 st.error(f"Cargar archivo **{labelUploadedYamlDATA}**", icon="🚨")
 
+    if st.session_state['dict_paramsForm3'] is not None:
+        df_data = st.session_state['dict_paramsForm3']['df_data']
+
+        funTap3.get_outForm3(df_data, dict_parameters)
+
     return
 
 def tab4():
     st.session_state['dict_paramsForm1'] = None
+    st.session_state['dict_paramsForm3'] = None
     
     st.header(list_tabs[3])
 
@@ -363,7 +406,7 @@ def tab4():
                 with col2:
                     deltaTime_m = st.selectbox("Seleccione el intervalo de tiempo en minutos:", options=[5, 10, 15, 30])
 
-                opciones_validas = funTap3.valid_options(df_excel, dict_parameters)
+                opciones_validas = funTap4.valid_options(df_excel, dict_parameters)
 
                 dataColumns = st.multiselect("Seleccione las columnas a procesar:", opciones_validas, default=opciones_validas)
         
@@ -380,9 +423,9 @@ def tab4():
     if st.session_state['dict_paramsForm4'] is not None: 
 
         dict_paramsForm4 = st.session_state['dict_paramsForm4']
-        outputFilename = funTap1.name_file_head(f"{uploaded_file.name.split('.')[0]}_min{dict_paramsForm4['deltaTime_m']}.xlsx")
+        outputFilename = funTap4.name_file_head(f"{uploaded_file.name.split('.')[0]}_min{dict_paramsForm4['deltaTime_m']}.xlsx")
 
-        excel_bytes = get_outForm3(dict_paramsForm4, constants_GD)
+        excel_bytes = get_outForm4(dict_paramsForm4, constants_GD)
 
         st.download_button(label="Descargar archivo procesado",
                            data=excel_bytes.read(),
