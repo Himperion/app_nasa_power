@@ -67,13 +67,14 @@ if 'dict_paramsForm1' not in st.session_state:
     st.session_state['dict_paramsForm1'] = None
 
 if 'dict_paramsForm3' not in st.session_state:
-    st.session_state['dict_paramsForm3'] = None
+    st.session_state['dict_paramsForm4'] = None
 
 options_multiselect = list(dict_parameters.keys())
 
 list_tabs = [
     "🌤️ Datos climáticos y potencial energético",
     "🌡️ Temperatura de operación",
+    "🔌 Consumo eléctrico",
     "⏱️ Aumentar número de muestras"
     ]
 
@@ -91,6 +92,8 @@ selectCoordinateOptions = [
 latitude, longitude, data_dates = None, None, None
 
 def tab1():
+    st.session_state['dict_paramsForm4'] = None
+
     latitude, longitude = None, None
     
     st.header(list_tabs[0])
@@ -237,7 +240,7 @@ def tab1():
         
 def tab2():
     st.session_state['dict_paramsForm1'] = None
-    st.session_state['dict_paramsForm3'] = None
+    st.session_state['dict_paramsForm4'] = None
 
     st.header(list_tabs[1])
 
@@ -292,9 +295,56 @@ def tab2():
     return
 
 def tab3():
+
     st.session_state['dict_paramsForm1'] = None
+    st.session_state['dict_paramsForm4'] = None
+
+    labelUploadedYamlDATA = 'Datos climáticos y potencial energético del sitio'
 
     st.header(list_tabs[2])
+
+    
+    with st.form('form3'):
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            typeLoad = st.selectbox(label='Tipo de carga', options=['Residencial', 'Comercial'], index=0)
+
+        with col2:
+            kWh_day = st.number_input(label='Consumo (kWh/día)', min_value=0.0, max_value=100.0, format='%0.3f',
+                                      step=0.001, value=1.126)
+            
+        uploadedXlsxDATA = st.file_uploader(label=f"📋 **Cargar archivo {labelUploadedYamlDATA}**",
+                                            type=["xlsx"], key='uploadedXlsxDATA')
+            
+
+        submittedTab3 = st.form_submit_button("Aceptar")
+
+        if submittedTab3:
+            if uploadedXlsxDATA is not None:
+                try:
+                    df_data = pd.read_excel(uploadedXlsxDATA)
+                    checkTime, timeInfo = funTap3.checkTimeData(df_data, deltaMinutes=60, deltaDays=1)
+
+                    if checkTime:
+                        df_loadPU = pd.read_excel('files/[Plantilla] - CargaPU ESSA.xlsx')
+
+                        df_data = funTap3.addLoadData(df_data, df_loadPU, typeLoad, kWh_day, timeInfo)
+                        
+                        st.dataframe(df_data)
+                except:
+                    st.error("Error al cargar archivo **EXCEL** (.xlsx)", icon="🚨")
+
+            else:
+                st.error(f"Cargar archivo **{labelUploadedYamlDATA}**", icon="🚨")
+
+    return
+
+def tab4():
+    st.session_state['dict_paramsForm1'] = None
+    
+    st.header(list_tabs[3])
 
     with st.container(border=True):
         uploaded_file = st.file_uploader("Seleccione los datos a cargar", type=["xlsx"])
@@ -317,22 +367,22 @@ def tab3():
 
                 dataColumns = st.multiselect("Seleccione las columnas a procesar:", opciones_validas, default=opciones_validas)
         
-                submittedTab3 = st.form_submit_button("Aceptar")
+                submittedTab4 = st.form_submit_button("Aceptar")
 
-                if submittedTab3:
-                    st.session_state['dict_paramsForm3'] = {
+                if submittedTab4:
+                    st.session_state['dict_paramsForm4'] = {
                         "df_excel": df_excel,
                         "variation": variation,
                         "deltaTime_m": deltaTime_m,
                         "dataColumns": dataColumns
                     }
 
-    if st.session_state['dict_paramsForm3'] is not None: 
+    if st.session_state['dict_paramsForm4'] is not None: 
 
-        dict_paramsForm3 = st.session_state['dict_paramsForm3']
-        outputFilename = funTap1.name_file_head(f"{uploaded_file.name.split('.')[0]}_min{dict_paramsForm3['deltaTime_m']}.xlsx")
+        dict_paramsForm4 = st.session_state['dict_paramsForm4']
+        outputFilename = funTap1.name_file_head(f"{uploaded_file.name.split('.')[0]}_min{dict_paramsForm4['deltaTime_m']}.xlsx")
 
-        excel_bytes = get_outForm3(dict_paramsForm3, constants_GD)
+        excel_bytes = get_outForm3(dict_paramsForm4, constants_GD)
 
         st.download_button(label="Descargar archivo procesado",
                            data=excel_bytes.read(),
@@ -344,5 +394,6 @@ pg = st.navigation([
     st.Page(tab1, title=list_tabs[0]),
     st.Page(tab2, title=list_tabs[1]),
     st.Page(tab3, title=list_tabs[2]),
+    st.Page(tab4, title=list_tabs[3]),
 ])
 pg.run()
