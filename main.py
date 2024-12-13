@@ -23,38 +23,8 @@ def get_outForm4(dict_params, constants_GD):
 
 #%% global variables
 
-dict_parameters = {
-    "Irradiancia (W/m^2)": {
-        "columnLabel": "Gin(W/m²)",
-        "NASALabel": "ALLSKY_SFC_SW_DWN",
-        "emoji": "🌤️"
-    },
-    "Velocidad del viento a 10 msnm (m/s)": {
-        "columnLabel": "Vwind 10msnm(m/s)",
-        "NASALabel": "WS10M",
-        "emoji": "✈️"
-    },
-    "Velocidad del viento a 50 msnm (m/s)": {
-        "columnLabel": "Vwind 50msnm(m/s)",
-        "NASALabel": "WS50M",
-        "emoji": "✈️"
-    },
-    "Temperatura ambiente a 2 msnm (°C)": {
-        "columnLabel": "Tamb 2msnm(°C)",
-        "NASALabel": "T2M",
-        "emoji": "🌡️"
-    },
-    "Temperatura de operación del modulo fotovoltaico": {
-        "columnLabel": "Toper(°C)",
-        "NASALabel": None,
-        "emoji": "🌡️"
-    },
-    "Perfil de demanda eléctrica": {
-        "columnLabel": "Load(kW)",
-        "NASALabel": None,
-        "emoji": "🔌"
-    }
-}
+with open("files//dict_parameters.yaml", 'r') as archivo:
+    dict_parameters = yaml.safe_load(archivo)
 
 items_options_columns_df = {
     "Geff" : ("Gef(W/m^2)", "Gef(W/m²)", "Gin(W/m²)", "Gin(W/m^2)"),
@@ -360,7 +330,7 @@ def tab3():
             if uploadedXlsxDATA is not None:
                 try:
                     df_data = pd.read_excel(uploadedXlsxDATA)
-                    checkTime, timeInfo = funTap3.checkTimeData(df_data, deltaMinutes=60, deltaDays=1)
+                    checkTime, timeInfo = funTap3.checkTimeData(df_data, deltaMinutes=60)
 
                     if checkTime:
                         df_loadPU = pd.read_excel('files/[Plantilla] - CargaPU ESSA.xlsx')
@@ -393,37 +363,46 @@ def tab4():
         uploaded_file = st.file_uploader("Seleccione los datos a cargar", type=["xlsx"])
         
         if uploaded_file is not None:
-            df_excel = pd.read_excel(uploaded_file)
+            try:
+                df_excel = pd.read_excel(uploaded_file)
 
-            with st.expander(f'📄 Ver dataset **:blue[{uploaded_file.name}]**'):
-                st.dataframe(df_excel)
+                checkTime, timeInfo = funTap3.checkTimeData(df_excel, deltaMinutes=60)
 
-            with st.form('form2'):
-                col1, col2 = st.columns(2)
+                if checkTime:
+                    with st.expander(f'📄 Ver dataset **:blue[{uploaded_file.name}]**'):
+                        st.dataframe(df_excel)
 
-                with col1:
-                    variation = st.slider("Seleccione el rango en que variarán los datos (%):", min_value=0, max_value=30) / 100
-                with col2:
-                    deltaTime_m = st.selectbox("Seleccione el intervalo de tiempo en minutos:", options=[5, 10, 15, 30])
+                    with st.form('form2'):
+                        col1, col2 = st.columns(2)
 
-                opciones_validas = funTap4.valid_options(df_excel, dict_parameters)
+                        with col1:
+                            variation = st.slider("Seleccione el rango en que variarán los datos (%):", min_value=0, max_value=30) / 100
+                        with col2:
+                            deltaTime_m = st.selectbox("Seleccione el intervalo de tiempo en minutos:", options=[5, 10, 15, 30])
 
-                dataColumns = st.multiselect("Seleccione las columnas a procesar:", opciones_validas, default=opciones_validas)
-        
-                submittedTab4 = st.form_submit_button("Aceptar")
+                        opciones_validas = funTap4.valid_options(df_excel, dict_parameters)
 
-                if submittedTab4:
-                    st.session_state['dict_paramsForm4'] = {
-                        "df_excel": df_excel,
-                        "variation": variation,
-                        "deltaTime_m": deltaTime_m,
-                        "dataColumns": dataColumns
-                    }
+                        dataColumns = st.multiselect("Seleccione las columnas a procesar:", opciones_validas, default=opciones_validas)
+                
+                        submittedTab4 = st.form_submit_button("Aceptar")
+
+                        if submittedTab4:
+                            st.session_state['dict_paramsForm4'] = {
+                                "df_excel": df_excel,
+                                "variation": variation,
+                                "deltaTime_m": deltaTime_m,
+                                "dataColumns": dataColumns
+                            }
+                else:
+                    st.error("No se encuentran columna de 'dates (Y-M-D hh:mm:ss)' o el delta de tiempo no es de 60min", icon="🚨") 
+
+            except:
+                st.error("Error al cargar archivo **EXCEL** (.xlsx)", icon="🚨")
 
     if st.session_state['dict_paramsForm4'] is not None: 
 
         dict_paramsForm4 = st.session_state['dict_paramsForm4']
-        outputFilename = funTap4.name_file_head(f"{uploaded_file.name.split('.')[0]}_min{dict_paramsForm4['deltaTime_m']}.xlsx")
+        outputFilename = f"{uploaded_file.name.split('.')[0]}_min{dict_paramsForm4['deltaTime_m']}.xlsx"
 
         excel_bytes = get_outForm4(dict_paramsForm4, constants_GD)
 

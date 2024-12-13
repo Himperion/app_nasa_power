@@ -19,7 +19,7 @@ def getTimeData(df_data: pd.DataFrame) -> dict:
 
     return timeInfo
 
-def checkTimeData(df_data: pd.DataFrame, deltaMinutes: int, deltaDays: int):
+def checkTimeData(df_data: pd.DataFrame, deltaMinutes: int):
 
     timeInfo = getTimeData(df_data)
     checkTime = False
@@ -206,9 +206,9 @@ def get_outForm3(df_data, dict_parameters):
 
     dict_download = {
         "Xlsx": {
-            "label": "Datos climaticos y potencial energético del sitio",
+            "label": "Consumo eléctrico",
             "type": "xlsx",
-            "fileName": "PES_params",
+            "fileName": "PES_addLoad",
             "nime": "xlsx",
             "emoji": "📄"
             }

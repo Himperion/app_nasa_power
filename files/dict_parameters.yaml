@@ -1,0 +1,24 @@
+Irradiancia (W/m^2):
+  NASALabel: ALLSKY_SFC_SW_DWN
+  columnLabel: "Gin(W/m\xB2)"
+  emoji: "\U0001F324\uFE0F"
+"Perfil de demanda el\xE9ctrica":
+  NASALabel: null
+  columnLabel: Load(kW)
+  emoji: "\U0001F50C"
+"Temperatura ambiente a 2 msnm (\xB0C)":
+  NASALabel: T2M
+  columnLabel: "Tamb 2msnm(\xB0C)"
+  emoji: "\U0001F321\uFE0F"
+"Temperatura de operaci\xF3n del modulo fotovoltaico":
+  NASALabel: null
+  columnLabel: "Toper(\xB0C)"
+  emoji: "\U0001F321\uFE0F"
+Velocidad del viento a 10 msnm (m/s):
+  NASALabel: WS10M
+  columnLabel: Vwind 10msnm(m/s)
+  emoji: "\u2708\uFE0F"
+Velocidad del viento a 50 msnm (m/s):
+  NASALabel: WS50M
+  columnLabel: Vwind 50msnm(m/s)
+  emoji: "\u2708\uFE0F"
