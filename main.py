@@ -146,9 +146,9 @@ def tab1():
                 lat_input = col1.number_input('Ingrese la latitud:', min_value=-90.0, max_value=90.0, step=0.000001, format="%.6f", value=7.142056)
                 lon_input = col2.number_input('Ingrese la longitud:', min_value=-180.0, max_value=180.0, step=0.000001, format="%.6f", value=-73.121231)
 
-            else:
-                with st.container(border=True):
-                    uploadedFileYaml = st.file_uploader(label="Sube tu archivo YAML", type=["yaml", "yml"])
+    elif dataEntryOptions == selectDataEntryOptions[2]:
+        with st.container(border=True):
+            uploadedFileYaml = st.file_uploader(label="Sube tu archivo YAML", type=["yaml", "yml"])
 
     with st.form('form1'):
         if dataEntryOptions == selectDataEntryOptions[0] or dataEntryOptions == selectDataEntryOptions[1]:
@@ -201,15 +201,15 @@ def tab1():
                         "end": date_end
                         }
                     
-                elif dataEntryOptions == selectDataEntryOptions[2]:
-                    if uploadedFileYaml is not None:
-                        try:
-                            st.session_state['dict_paramsForm1'] = yaml.safe_load(uploadedFileYaml)
+            elif dataEntryOptions == selectDataEntryOptions[2]:
+                if uploadedFileYaml is not None:
+                    try:
+                        st.session_state['dict_paramsForm1'] = yaml.safe_load(uploadedFileYaml)
 
-                        except:
-                            st.error("Error al cargar archivo **YAML** (.yaml)", icon="🚨")
-                    else:
-                        st.warning("Cargar archivo **YAML** (.yaml)", icon="⚠️")
+                    except:
+                        st.error("Error al cargar archivo **YAML** (.yaml)", icon="🚨")
+                else:
+                    st.warning("Cargar archivo **YAML** (.yaml)", icon="⚠️")
 
                 
     if st.session_state['dict_paramsForm1'] is not None:   
