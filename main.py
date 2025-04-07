@@ -422,7 +422,7 @@ def tab4():
 
         st.markdown("Para mantener un sentido lógico con el valor original se plantea, el promedio de los datos objetivo sea aproximadamente igual al valor del origen.")
         st.latex(r"y_{i}\cong \frac{y_{1}+y_{2}+...+y_{n}}{n}=mean(y_{1},y_{2},...,y_{n})")
-        st.markdown("Esta expresión nos permitirá obtener una función de coste ($CF$) que permita evaluar valores objetivo ($y_{1},y_{2},...,y_{n}$).")
+        st.markdown("Esta expresión nos permitirá obtener una función de coste ($CF$) que permita evaluar los valores objetivo ($y_{1},y_{2},...,y_{n}$).")
         st.latex(r"CF=(y_{i}-mean(y_{1},y_{2},...,y_{n}))^{2}")
         st.markdown("Ahora para poder actualizar los valores objetivos es necesaria la derivada parcial de la función de coste en función del valor de interés a actualizar $mean(y_{1},y_{2},...,y_{n})$")
         st.latex(r"CF^{'}=2(mean(y_{1},y_{2},...,y_{n})-y_{i})")
@@ -548,13 +548,6 @@ def tab4():
                         ax.grid(True)
 
                         st.pyplot(fig)
-
-                
-
-        
-
-
-
 
     with tab_main:
         with st.container(border=True):
