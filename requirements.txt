@@ -7,8 +7,11 @@ certifi==2024.7.4
 charset-normalizer==3.3.2
 click==8.1.7
 colorama==0.4.6
+contourpy==1.3.1
+cycler==0.12.1
 et-xmlfile==1.1.0
 folium==0.17.0
+fonttools==4.57.0
 geopandas==1.0.1
 gitdb==4.0.11
 GitPython==3.1.43
@@ -17,8 +20,10 @@ importlib_metadata==7.2.1
 Jinja2==3.1.4
 jsonschema==4.23.0
 jsonschema-specifications==2023.12.1
+kiwisolver==1.4.8
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
+matplotlib==3.10.1
 mdurl==0.1.2
 numpy==1.26.4
 openpyxl==3.1.2
@@ -31,6 +36,7 @@ pydeck==0.9.1
 Pygments==2.18.0
 pynasapower==0.0.1a1
 pyogrio==0.9.0
+pyparsing==3.2.3
 pyproj==3.6.1
 python-dateutil==2.9.0.post0
 pytz==2024.1

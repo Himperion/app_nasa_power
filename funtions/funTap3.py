@@ -46,6 +46,29 @@ def name_file_head(name: str) -> str:
     now = datetime.now()
     return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
 
+def exampleCF(xi, xi_1, yi, yi_1, n, var, tol, iter):
+    err, iter_count, alpha = 100, 0, 0.1
+    err_values = []
+
+    dx = (xi_1 - xi)/n
+    xj = np.array([xi + (j-1)*dx for j in range(1, n+1, 1)])
+    var_min, var_max = yi * (1 - var), yi * (1 + var)
+    yj = np.array([random.uniform(var_min, var_max) for i in range(n)])
+
+    while iter_count < iter and err > tol:
+        dCF = 2*(np.mean(yj) - yi)
+        pre_yj = yj - alpha*dCF
+        err = (yi - np.mean(pre_yj))**2
+
+        yj = pre_yj
+        iter_count += 1
+        err_values.append(err)
+
+    err_values = np.array(err_values)
+    mean_yj = np.mean(yj)
+
+    return xj, yj, mean_yj, iter_count, err_values, var_min, var_max
+
 def gradient_descent_LR(value, n, variation, alpha, tol, iter_max):
     err, iter_count = 100, 0
     if np.any(value == 0.0):
