@@ -184,7 +184,8 @@ def viewInformation(df_data: pd.DataFrame, dict_params: dict, dict_download: dic
                     label=f"{value['emoji']} Descargar **:blue[{value['label']}] {value['type'].upper()}**",
                     data=bytesFile,
                     file_name=name_file_head(name=f"{value['fileName']}.{value['type']}"),
-                    mime=value['nime'])
+                    mime=value['nime'],
+                    on_click="ignore")
                 
     return
 

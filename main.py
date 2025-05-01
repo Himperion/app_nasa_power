@@ -102,6 +102,8 @@ def tab1():
     st.session_state['dict_paramsForm4'] = None
 
     latitude, longitude = None, None
+
+    flag_submittedTab1 = False
     
     st.header(list_tabs[0])
 
@@ -109,6 +111,7 @@ def tab1():
                                     index=0, placeholder="Selecciona una opción")
     
     if dataEntryOptions == selectDataEntryOptions[0]:
+        flag_submittedTab1 = False
         click_map = folium.Map(location=[7.142056, -73.121231], zoom_start=18)
         click_marker = folium.LatLngPopup()
         click_map.add_child(click_marker)
@@ -124,6 +127,7 @@ def tab1():
             st.markdown(f"**:blue[Latitud:]** {latitude} **:blue[Longitud:]** {longitude}")
 
     elif dataEntryOptions == selectDataEntryOptions[1]:
+        flag_submittedTab1 = False
         coordinate_options = st.selectbox(label="Opciones de ingreso de coordenadas geográficas",
                                           options=selectCoordinateOptions,
                                           index=1, placeholder="Selecciona una opción")
@@ -155,6 +159,7 @@ def tab1():
                 lon_input = col2.number_input('Ingrese la longitud:', min_value=-180.0, max_value=180.0, step=0.000001, format="%.6f", value=-73.121231)
 
     elif dataEntryOptions == selectDataEntryOptions[2]:
+        flag_submittedTab1 = False
         with st.container(border=True):
             uploadedFileYaml = st.file_uploader(label="Sube tu archivo YAML", type=["yaml", "yml"])
 
@@ -183,6 +188,7 @@ def tab1():
                         "start": date_ini,
                         "end": date_end
                         }
+                    flag_submittedTab1 = True
                 else:
                     st.warning("Ingrese una latitud y longitud en el mapa interactivo", icon="⚠️")
  
@@ -200,6 +206,7 @@ def tab1():
                         "date_ini": date_ini,
                         "date_end": date_end,
                         })
+                    flag_submittedTab1 = True
                         
                 elif coordinate_options == selectCoordinateOptions[1]:
                     st.session_state['dict_paramsForm1'] = {
@@ -208,19 +215,20 @@ def tab1():
                         "start": date_ini,
                         "end": date_end
                         }
+                    flag_submittedTab1 = True
                     
             elif dataEntryOptions == selectDataEntryOptions[2]:
                 if uploadedFileYaml is not None:
                     try:
                         st.session_state['dict_paramsForm1'] = yaml.safe_load(uploadedFileYaml)
-
+                        flag_submittedTab1 = True
                     except:
                         st.error("Error al cargar archivo **YAML** (.yaml)", icon="🚨")
                 else:
                     st.warning("Cargar archivo **YAML** (.yaml)", icon="⚠️")
 
                 
-    if st.session_state['dict_paramsForm1'] is not None:   
+    if st.session_state['dict_paramsForm1'] is not None and flag_submittedTab1:   
         dict_params = st.session_state['dict_paramsForm1']
         cal_rows = funTap1.cal_rows(dict_params["start"], dict_params["end"], steps=60)
 

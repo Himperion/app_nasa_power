@@ -49,7 +49,7 @@ scipy==1.14.0
 shapely==2.0.5
 six==1.16.0
 smmap==5.0.1
-streamlit==1.40.0
+streamlit==1.44.1
 streamlit-folium==0.18.0
 tenacity==8.5.0
 toml==0.10.2
