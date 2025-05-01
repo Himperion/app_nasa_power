@@ -3,9 +3,10 @@ import pandas as pd
 import numpy as np
 import folium, warnings, io, yaml
 import matplotlib.pyplot as plt
-
+import plotly.express as px
 from streamlit_folium import st_folium
 from datetime import date, timedelta
+
 from funtions import funTap1, funTap2, funTap3, funTap4
 
 warnings.filterwarnings("ignore")
@@ -374,8 +375,9 @@ def tab3():
             df_view[typeLoad] = df_view[typeLoad]*factor
 
             with st.container(border=True):
-                st.line_chart(data=df_view, x="Hora", y=typeLoad)
-            
+                funTap3.graph_dataframe(df_view, "Hora", typeLoad, "teal", "Potencia (kW)", False)
+
+
         uploadedXlsxDATA = st.file_uploader(label=f"📋 **Cargar archivo {labelUploadedYamlDATA}**",
                                             type=["xlsx"], key='uploadedXlsxDATA')
             

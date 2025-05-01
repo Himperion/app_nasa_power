@@ -3,6 +3,7 @@ import numpy as np
 import streamlit as st
 import random, io, yaml
 from datetime import datetime, timedelta
+import plotly.express as px
 
 def getTimeData(df_data: pd.DataFrame) -> dict:
 
@@ -240,5 +241,31 @@ def get_outForm3(df_data, dict_parameters):
                     dict_params=None,
                     dict_download=dict_download,
                     dict_parameters=dict_parameters)
+
+    return
+
+def graph_dataframe(df, x, y, color, value_label, xrsv):
+
+    fig = px.bar(df,
+                  x=x,
+                  y=y,
+                  color_discrete_sequence=[color],
+                  labels={"Value": value_label})
+    
+    fig.update_layout(
+        xaxis_tickangle=0,
+        xaxis=dict(showgrid=True),
+        yaxis=dict(tickformat=".3f", showgrid=True),  
+        xaxis_rangeslider_visible=xrsv
+    )
+
+    config ={
+        "displayModeBar": True,
+        "displaylogo": False,
+        "modeBarButtonsToRemove": ["zoom", "pan", "hoverClosestCartesian", "hoverCompareCartesian", "sendDataToCloud",
+                                   "zoomIn", "zoomOut", "lasso2d", "select2d"]
+    }
+
+    st.plotly_chart(fig, use_container_width=True, config=config)
 
     return
