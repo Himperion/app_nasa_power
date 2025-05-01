@@ -354,23 +354,32 @@ def tab3():
     labelUploadedYamlDATA = 'Datos climáticos y potencial energético del sitio'
 
     st.header(list_tabs[2])
-    
-    with st.form('form3'):
 
+    df_loadPU = pd.read_excel("files/[Plantilla] - CargaPU ESSA.xlsx")
+    columns_load = df_loadPU.columns.to_list()[1:]
+    
+    with st.container(border=True):
         col1, col2 = st.columns(2)
 
         with col1:
-            typeLoad = st.selectbox(label='Tipo de carga', options=['Residencial', 'Comercial'], index=0)
+            typeLoad = st.selectbox(label="Tipo de carga", options=columns_load, index=0)
 
         with col2:
             kWh_day = st.number_input(label='Consumo (kWh/día)', min_value=0.0, max_value=100.0, format='%0.3f',
                                       step=0.001, value=1.126)
             
+        if typeLoad is not None:
+            factor = kWh_day/df_loadPU[typeLoad].sum()
+            df_view = df_loadPU.copy()
+            df_view[typeLoad] = df_view[typeLoad]*factor
+
+            with st.container(border=True):
+                st.line_chart(data=df_view, x="Hora", y=typeLoad)
+            
         uploadedXlsxDATA = st.file_uploader(label=f"📋 **Cargar archivo {labelUploadedYamlDATA}**",
                                             type=["xlsx"], key='uploadedXlsxDATA')
             
-
-        submittedTab3 = st.form_submit_button("Aceptar")
+        submittedTab3 = st.button("Aceptar")
 
         if submittedTab3:
             if uploadedXlsxDATA is not None:
@@ -379,7 +388,6 @@ def tab3():
                     checkTime, timeInfo = funTap3.checkTimeData(df_data, deltaMinutes=60)
 
                     if checkTime:
-                        df_loadPU = pd.read_excel('files/[Plantilla] - CargaPU ESSA.xlsx')
                         df_data = funTap3.addLoadData(df_data, df_loadPU, typeLoad, kWh_day, timeInfo)
 
                         st.session_state['dict_paramsForm3'] = {
@@ -388,7 +396,6 @@ def tab3():
 
                 except:
                     st.error("Error al cargar archivo **EXCEL** (.xlsx)", icon="🚨")
-
             else:
                 st.error(f"Cargar archivo **{labelUploadedYamlDATA}**", icon="🚨")
 

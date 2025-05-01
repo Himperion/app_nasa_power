@@ -226,7 +226,6 @@ def viewInformation(df_data: pd.DataFrame, dict_params: dict, dict_download: dic
 
 def get_outForm3(df_data, dict_parameters):
 
-
     dict_download = {
         "Xlsx": {
             "label": "Consumo eléctrico",
