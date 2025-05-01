@@ -244,7 +244,7 @@ def get_outForm3(df_data, dict_parameters):
 
     return
 
-def graph_dataframe(df, x, y, color, value_label, xrsv):
+def graph_dataframe(df: pd.DataFrame, x, y, color, value_label, xrsv):
 
     fig = px.bar(df,
                   x=x,
@@ -258,6 +258,11 @@ def graph_dataframe(df, x, y, color, value_label, xrsv):
         yaxis=dict(tickformat=".3f", showgrid=True),  
         xaxis_rangeslider_visible=xrsv
     )
+
+    prom = df[y].mean()
+
+    #fig.add_hline(y=prom, line_dash="dash", line_color="red",
+    #              annotation_text=f"Promedio: {prom:.4f}", annotation_position="top right")
 
     config ={
         "displayModeBar": True,

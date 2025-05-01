@@ -372,10 +372,10 @@ def tab3():
         if typeLoad is not None:
             factor = kWh_day/df_loadPU[typeLoad].sum()
             df_view = df_loadPU.copy()
-            df_view[typeLoad] = df_view[typeLoad]*factor
+            df_view[f"{typeLoad} (kW)"] = df_view[typeLoad]*factor
 
             with st.container(border=True):
-                funTap3.graph_dataframe(df_view, "Hora", typeLoad, "teal", "Potencia (kW)", False)
+                funTap3.graph_dataframe(df_view, "Hora", f"{typeLoad} (kW)", "teal", "Potencia (kW)", False)
 
 
         uploadedXlsxDATA = st.file_uploader(label=f"📋 **Cargar archivo {labelUploadedYamlDATA}**",
