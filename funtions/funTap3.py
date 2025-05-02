@@ -259,7 +259,7 @@ def graph_dataframe(df: pd.DataFrame, x, y, color, value_label, xrsv):
         xaxis_rangeslider_visible=xrsv
     )
 
-    prom = df[y].mean()
+    #prom = df[y].mean()
 
     #fig.add_hline(y=prom, line_dash="dash", line_color="red",
     #              annotation_text=f"Promedio: {prom:.4f}", annotation_position="top right")

@@ -624,6 +624,6 @@ pg = st.navigation([
     st.Page(tab1, title=list_tabs[0]),
     st.Page(tab2, title=list_tabs[1]),
     st.Page(tab3, title=list_tabs[2]),
-    st.Page(tab4, title=list_tabs[3]),
+    #st.Page(tab4, title=list_tabs[3]),
 ])
 pg.run()
