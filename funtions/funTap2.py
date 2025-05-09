@@ -3,6 +3,8 @@ import pandas as pd
 from datetime import datetime
 from io import BytesIO
 
+from funtions import general
+
 def name_file_head(name: str) -> str:
     now = datetime.now()
     return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
@@ -17,11 +19,11 @@ def get_widget_number_input(label: str, variable: dict):
 
 def get_download_button(directory: str, name_file: str, format_file: str, description: str):
 
-    with open(f"{directory}/{name_file}.{format_file}", "rb") as content_xlsx:
-                st.download_button(label=f"📄 Descargar plantilla **:red[{description}]**:",
-                                   data=content_xlsx,
-                                   file_name=f"{name_file}.{format_file}",
-                                   mime=format_file)
+    with open(general.resource_path(f"{directory}/{name_file}.{format_file}"), "rb") as content_xlsx:
+        st.download_button(label=f"📄 Descargar plantilla **:red[{description}]**:",
+                           data=content_xlsx,
+                           file_name=f"{name_file}.{format_file}",
+                           mime=format_file)
                 
     return
 

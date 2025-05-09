@@ -7,7 +7,7 @@ import plotly.express as px
 from streamlit_folium import st_folium
 from datetime import date, timedelta
 
-from funtions import funTap1, funTap2, funTap3, funTap4
+from funtions import general, funTap1, funTap2, funTap3, funTap4
 
 warnings.filterwarnings("ignore")
 
@@ -27,7 +27,7 @@ def get_outForm4(dict_params, constants_GD):
 
 #%% global variables
 
-with open("files//dict_parameters.yaml", 'r') as archivo:
+with open(general.resource_path("files//dict_parameters.yaml"), 'r') as archivo:
     dict_parameters = yaml.safe_load(archivo)
 
 items_options_columns_df = {
@@ -356,7 +356,7 @@ def tab3():
 
     st.header(list_tabs[2])
 
-    df_loadPU = pd.read_excel("files/[Plantilla] - CargaPU ESSA.xlsx")
+    df_loadPU = pd.read_excel(general.resource_path("files/[Plantilla] - CargaPU ESSA.xlsx"))
     columns_load = df_loadPU.columns.to_list()[1:]
     
     with st.container(border=True):
@@ -433,7 +433,7 @@ def tab4():
         with col1:
             st.write("")
         with col2:
-            st.image("files//img_tab4_1.png")
+            st.image(general.resource_path("files//img_tab4_1.png"))
         with col3:
             st.write("")
 
