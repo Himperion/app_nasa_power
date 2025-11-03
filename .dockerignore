@@ -1,0 +1,18 @@
+# Ignorar entornos virtuales
+env/
+venv/
+
+# Archivos y carpetas de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos del sistema
+.DS_Store
+
+# Configuración local o sensible
+.env
+.git
+.gitignore
+cloudbuild.yaml

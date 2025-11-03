@@ -3,8 +3,8 @@ import pandas as pd
 import datetime as dt
 from pynasapower.get_data import query_power
 from pynasapower.geometry import point
-import yaml, io
 
+from funtions import general
 
 def get_multiselect_params(list_show_output):
 
@@ -92,103 +92,6 @@ def add_column_dates(dataframe: pd.DataFrame, date_ini, rows, steps) -> pd.DataF
 
     return dataframe
 
-def get_list_tabs_graph(list_data_columns: list, list_options_columns_name: list, list_options_columns_label: list):
-
-    list_tabs_graph_name, list_tabs_graph_label = [], []
-    for i in range(0,len(list_data_columns),1):
-        if list_data_columns[i] in list_options_columns_name:
-            list_tabs_graph_name.append(list_data_columns[i])
-            list_tabs_graph_label.append(list_options_columns_label[list_options_columns_name.index(list_data_columns[i])])
-
-    return list_tabs_graph_name, list_tabs_graph_label
-
-def view_dataframe_information(dataframe: pd.DataFrame, dict_parameters: dict):
-
-    listOptionsColumnsName = [dict_parameters[key]["columnLabel"] for key in dict_parameters]
-    listOptionsColumnsLabel = [f"{dict_parameters[key]['emoji']} {dict_parameters[key]['columnLabel']}" for key in dict_parameters]
-
-    list_tabs_graph_name, list_tabs_graph_label = get_list_tabs_graph(list(dataframe.columns),
-                                                                      listOptionsColumnsName,
-                                                                      listOptionsColumnsLabel)
-     
-    if len(list_tabs_graph_name) != 0:
-        if len(list_tabs_graph_name) == 1:
-            subtab_con1 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1[0]]
-        elif len(list_tabs_graph_name) == 2:
-            subtab_con1, subtab_con2 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1, subtab_con2]
-        elif len(list_tabs_graph_name) == 3:
-            subtab_con1, subtab_con2, subtab_con3 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1, subtab_con2, subtab_con3]
-        elif len(list_tabs_graph_name) == 4:
-            subtab_con1, subtab_con2, subtab_con3, subtab_con4 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4]
-        elif len(list_tabs_graph_name) == 5:
-            subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5]
-        elif len(list_tabs_graph_name) == 6:
-            subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6]
-
-        for i in range(0,len(list_subtab_con),1):
-            with list_subtab_con[i]:
-                st.line_chart(data=dataframe[[list_tabs_graph_name[i]]], y=list_tabs_graph_name[i])
-
-    return
-
-def get_bytes_yaml(dictionary: dict):
-
-    yaml_data = yaml.dump(dictionary, allow_unicode=True)
-
-    buffer = io.BytesIO()
-    buffer.write(yaml_data.encode('utf-8'))
-    buffer.seek(0)
-
-    return buffer
-
-def to_excel(df: pd.DataFrame):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Sheet1")
-    
-    processed_data = output.getvalue()
-        
-    return processed_data
-
-def name_file_head(name: str) -> str:
-    now = dt.datetime.now()
-    return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
-
-def viewInformation(df_data: pd.DataFrame, dict_params: dict, dict_download: dict, dict_parameters):
-
-    sub_tab1, sub_tab2, sub_tab3 = st.tabs(["📋 Parámetros", "📈 Gráficas", "💾 Descargas"])
-
-    with sub_tab1:
-        with st.container(border=True):
-            st.dataframe(df_data)
-
-    with sub_tab2:
-        with st.container(border=True):
-            view_dataframe_information(df_data, dict_parameters)
-
-    with sub_tab3:
-        with st.container(border=True):
-            for key, value in dict_download.items():
-                if value['type'] == 'xlsx':
-                    bytesFile = to_excel(df_data)
-                elif value['type'] == 'yaml':
-                    bytesFile = get_bytes_yaml(dict_params)
-
-                st.download_button(
-                    label=f"{value['emoji']} Descargar **:blue[{value['label']}] {value['type'].upper()}**",
-                    data=bytesFile,
-                    file_name=name_file_head(name=f"{value['fileName']}.{value['type']}"),
-                    mime=value['nime'],
-                    on_click="ignore")
-                
-    return
-
 def get_outForm1(dict_params, dict_parameters, options, cal_rows):
 
     parameters = get_parameters_NASA_POWER(options, dict_parameters)
@@ -217,6 +120,6 @@ def get_outForm1(dict_params, dict_parameters, options, cal_rows):
         }  
     }
     
-    viewInformation(data, dict_params, dict_download, dict_parameters)
+    general.viewInformation(data, dict_params, dict_download)
 
     return

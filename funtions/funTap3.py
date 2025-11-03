@@ -5,6 +5,8 @@ import random, io, yaml
 from datetime import datetime, timedelta
 import plotly.express as px
 
+from funtions import general
+
 def getTimeData(df_data: pd.DataFrame) -> dict:
 
     timeInfo = {}
@@ -32,14 +34,13 @@ def checkTimeData(df_data: pd.DataFrame, deltaMinutes: int):
 
     return checkTime, timeInfo
 
-def addLoadData(df_data: pd.DataFrame, df_loadPU: pd.DataFrame, typeLoad: str, kWh_day: float, timeInfo: dict):
+def addLoadData(df_data: pd.DataFrame, df_loadResized: pd.DataFrame, columnLoad: str, timeInfo: dict):
 
-    factor = kWh_day/df_loadPU[typeLoad].sum()
-    df_data['Load(kW)'] = 0.0
+    df_data["Load(kW)"] = 0.0
 
     for i in range(0,int(df_data.shape[0]/24),1):
         lowerValue, upperValue = 24*i, 24*(i+1)-1
-        df_data.loc[lowerValue:upperValue, 'Load(kW)'] = [val*factor for val in df_loadPU[typeLoad].tolist()]
+        df_data.loc[lowerValue:upperValue, "Load(kW)"] = [val for val in df_loadResized[columnLoad].tolist()]
  
     return df_data
 
@@ -259,11 +260,6 @@ def graph_dataframe(df: pd.DataFrame, x, y, color, value_label, xrsv):
         xaxis_rangeslider_visible=xrsv
     )
 
-    #prom = df[y].mean()
-
-    #fig.add_hline(y=prom, line_dash="dash", line_color="red",
-    #              annotation_text=f"Promedio: {prom:.4f}", annotation_position="top right")
-
     config ={
         "displayModeBar": True,
         "displaylogo": False,
@@ -272,5 +268,21 @@ def graph_dataframe(df: pd.DataFrame, x, y, color, value_label, xrsv):
     }
 
     st.plotly_chart(fig, use_container_width=True, config=config)
+
+    return
+
+def get_outForm3(df: pd.DataFrame):
+
+    dict_download = {
+        "Xlsx": {
+            "label": "Consumo eléctrico",
+            "type": "xlsx",
+            "fileName": "PES_addLoad",
+            "nime": "xlsx",
+            "emoji": "📄"
+            }
+    }
+    
+    general.viewInformation(df_data=df, dict_params=None, dict_download=dict_download)
 
     return

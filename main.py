@@ -354,29 +354,85 @@ def tab3():
 
     labelUploadedYamlDATA = 'Datos climáticos y potencial energético del sitio'
 
+    opt_load_profile = ["ESSA", "Personalizado"]
+
     st.header(list_tabs[2])
 
     df_loadPU = pd.read_excel(general.resource_path("files/[Plantilla] - CargaPU ESSA.xlsx"))
     columns_load = df_loadPU.columns.to_list()[1:]
+    default_kWh_day = 1.126
+    df_loadResized = None
     
     with st.container(border=True):
-        col1, col2 = st.columns(2)
+        typeLoad = st.selectbox(label="Perfil de carga", options=opt_load_profile, index=0)
 
-        with col1:
-            typeLoad = st.selectbox(label="Tipo de carga", options=columns_load, index=0)
+        if typeLoad == opt_load_profile[0]:
+            col1, col2 = st.columns(2)
+            with col1:
+                typeLoad = st.selectbox(label="Tipo de carga", options=columns_load, index=0)
+            with col2:
+                kWh_day = st.number_input(label="Consumo (kWh/día)", min_value=0.0, max_value=100.0, format="%0.2f",
+                                          step=0.01, value=default_kWh_day)
+                
+            if typeLoad is not None:
+                columnLoad = f"{typeLoad} (kW)"
+                factor = kWh_day/df_loadPU[typeLoad].sum()
+                df_loadResized = df_loadPU.copy()
+                df_loadResized[columnLoad] = df_loadResized[typeLoad]*factor
 
-        with col2:
-            kWh_day = st.number_input(label='Consumo (kWh/día)', min_value=0.0, max_value=100.0, format='%0.3f',
-                                      step=0.001, value=1.126)
+                with st.container(border=True):
+                    funTap3.graph_dataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)", False)
+
+        elif typeLoad == opt_load_profile[1]:
+            columnLoad = f"{typeLoad} (kW)"
+            factor = default_kWh_day/df_loadPU["Comercial"].sum()
+            default_kWh_hour = [round(row["Comercial"]*factor, 3) for index, row in df_loadPU.iterrows()]
             
-        if typeLoad is not None:
-            factor = kWh_day/df_loadPU[typeLoad].sum()
-            df_view = df_loadPU.copy()
-            df_view[f"{typeLoad} (kW)"] = df_view[typeLoad]*factor
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                with st.container(border=True):
+                    hour_00 = st.number_input(label="00:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[0], key="hour_00")
+                    hour_01 = st.number_input(label="01:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[1], key="hour_01")
+                    hour_02 = st.number_input(label="02:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[2], key="hour_02")
+                    hour_03 = st.number_input(label="03:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[3], key="hour_03")
+                    hour_04 = st.number_input(label="04:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[4], key="hour_04")
+                    hour_05 = st.number_input(label="05:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[5], key="hour_05")
+            with col2:
+                with st.container(border=True):
+                    hour_06 = st.number_input(label="06:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[6], key="hour_06")
+                    hour_07 = st.number_input(label="07:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[7], key="hour_07")
+                    hour_08 = st.number_input(label="08:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[8], key="hour_08")
+                    hour_09 = st.number_input(label="09:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[9], key="hour_09")
+                    hour_10 = st.number_input(label="10:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[10], key="hour_10")
+                    hour_11 = st.number_input(label="11:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[11], key="hour_11")
+            with col3:
+                with st.container(border=True):
+                    hour_12 = st.number_input(label="12:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[12], key="hour_12")
+                    hour_13 = st.number_input(label="13:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[13], key="hour_13")
+                    hour_14 = st.number_input(label="14:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[14], key="hour_14")
+                    hour_15 = st.number_input(label="15:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[15], key="hour_15")
+                    hour_16 = st.number_input(label="16:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[16], key="hour_16")
+                    hour_17 = st.number_input(label="17:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[17], key="hour_17")
+            with col4:
+                with st.container(border=True):
+                    hour_18 = st.number_input(label="18:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[18], key="hour_18")
+                    hour_19 = st.number_input(label="19:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[19], key="hour_19")
+                    hour_20 = st.number_input(label="20:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[20], key="hour_20")
+                    hour_21 = st.number_input(label="21:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[21], key="hour_21")
+                    hour_22 = st.number_input(label="22:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[22], key="hour_22")
+                    hour_23 = st.number_input(label="23:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[23], key="hour_23")
+   
+            load_time_stamp = [hour_00, hour_01, hour_02, hour_03, hour_04, hour_05,
+                               hour_06, hour_07, hour_08, hour_09, hour_10, hour_11,
+                               hour_12, hour_13, hour_14, hour_15, hour_16, hour_17,
+                               hour_18, hour_19, hour_20, hour_21, hour_22, hour_23]
+            
+            df_loadResized = pd.DataFrame(load_time_stamp, columns=[columnLoad])
+            df_loadResized["Hora"] = list(range(0,24,1))
 
-            with st.container(border=True):
-                funTap3.graph_dataframe(df_view, "Hora", f"{typeLoad} (kW)", "teal", "Potencia (kW)", False)
-
+            if df_loadResized is not None:
+                with st.container(border=True):
+                    funTap3.graph_dataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)", False)
 
         uploadedXlsxDATA = st.file_uploader(label=f"📋 **Cargar archivo {labelUploadedYamlDATA}**",
                                             type=["xlsx"], key='uploadedXlsxDATA')
@@ -389,8 +445,8 @@ def tab3():
                     df_data = pd.read_excel(uploadedXlsxDATA)
                     checkTime, timeInfo = funTap3.checkTimeData(df_data, deltaMinutes=60)
 
-                    if checkTime:
-                        df_data = funTap3.addLoadData(df_data, df_loadPU, typeLoad, kWh_day, timeInfo)
+                    if checkTime and df_loadResized is not None:
+                        df_data = funTap3.addLoadData(df_data, df_loadResized, columnLoad, timeInfo)
 
                         st.session_state['dict_paramsForm3'] = {
                             "df_data": df_data,
@@ -401,10 +457,12 @@ def tab3():
             else:
                 st.error(f"Cargar archivo **{labelUploadedYamlDATA}**", icon="🚨")
 
-    if st.session_state['dict_paramsForm3'] is not None:
-        df_data = st.session_state['dict_paramsForm3']['df_data']
+    if st.session_state["dict_paramsForm3"] is not None:
+        df_data = st.session_state["dict_paramsForm3"]["df_data"]
 
-        funTap3.get_outForm3(df_data, dict_parameters)
+        
+
+        funTap3.get_outForm3(df_data)
 
     return
 
