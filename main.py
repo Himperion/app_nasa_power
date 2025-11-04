@@ -35,10 +35,7 @@ items_options_columns_df = {
     "Tamb" : ("Tamb(°C)", "Tamb 2msnm(°C)")
 }
 
-dateImputNasa = {
-    "min_value": date.today() - timedelta(days=251),
-    "max_value": date.today() - timedelta(days=250),
-}
+min_value, max_value = general.get_date_imput_nasa()
 
 template = {
     "directory": "files",
@@ -172,8 +169,8 @@ def tab1():
 
                 col1, col2 = st.columns(2)
 
-                date_ini = col1.date_input("Fecha de Inicio:", max_value=dateImputNasa["min_value"], )
-                date_end = col2.date_input("Fecha Final:", max_value=dateImputNasa["max_value"])
+                date_ini = col1.date_input("Fecha de Inicio:", max_value=min_value)
+                date_end = col2.date_input("Fecha Final:", max_value=max_value)
 
         parameterOptions = funTap1.get_parameterOptions(dict_parameters)
         options = funTap1.get_multiselect_params(list_show_output=parameterOptions)
@@ -381,7 +378,7 @@ def tab3():
                 df_loadResized[columnLoad] = df_loadResized[typeLoad]*factor
 
                 with st.container(border=True):
-                    funTap3.graph_dataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)", False)
+                    general.graph_dataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)")
 
         elif typeLoad == opt_load_profile[1]:
             columnLoad = f"{typeLoad} (kW)"
@@ -432,7 +429,7 @@ def tab3():
 
             if df_loadResized is not None:
                 with st.container(border=True):
-                    funTap3.graph_dataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)", False)
+                    general.graph_dataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)", False)
 
         uploadedXlsxDATA = st.file_uploader(label=f"📋 **Cargar archivo {labelUploadedYamlDATA}**",
                                             type=["xlsx"], key='uploadedXlsxDATA')

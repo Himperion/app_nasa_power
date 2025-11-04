@@ -1,4 +1,4 @@
-import os, sys, io, yaml
+import os, sys, io, yaml, calendar
 import pandas as pd
 import streamlit as st
 import datetime as dt
@@ -52,6 +52,29 @@ def name_file_head(name: str) -> str:
     now = dt.datetime.now()
     return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
 
+def get_date_imput_nasa() -> tuple[dt.date, dt.date]:
+
+    date_now = dt.date.today() - dt.timedelta(days=250)
+    min_value = date_now.replace(day=1, month=date_now.month-1)
+    max_value = min_value.replace(month=min_value.month+1)
+
+    return min_value, max_value
+
+def getTimeData(df_data: pd.DataFrame) -> dict:
+
+    timeInfo = {}
+
+    if "dates (Y-M-D hh:mm:ss)" in df_data.columns:
+        time_0 = df_data.loc[0, "dates (Y-M-D hh:mm:ss)"].to_pydatetime()
+        time_1 = df_data.loc[1, "dates (Y-M-D hh:mm:ss)"].to_pydatetime()
+
+        timeInfo["deltaMinutes"] = (time_1 - time_0).total_seconds()/60
+        timeInfo["dateIni"] = time_0
+        timeInfo["dateEnd"] = df_data.loc[df_data.index[-1], "dates (Y-M-D hh:mm:ss)"].to_pydatetime()
+        timeInfo["deltaDays"] = (timeInfo['dateEnd'] - timeInfo['dateIni']).days
+
+    return timeInfo
+
 def get_range_selector(df: pd.DataFrame, column_date: str) -> list:
 
     range_days = (df[column_date].max() - df[column_date].min()).days
@@ -97,9 +120,40 @@ def get_list_tabs_graph_name(list_df_columns: list) -> tuple[list, list]:
 
     return list_columns_label, list_columns_tabs
 
-def viwe_info_df_time(df: pd.DataFrame, column_date: str, column_label: str, config: dict):
+def get_dict_range_selector_slider(df: pd.DataFrame, column_date: str, rangeSelector: bool, rangeSlider: bool) -> dict:
 
-    range_selector = get_range_selector(df=df, column_date=column_date)
+    dict_range_selector, dict_range_slider = {}, {}
+    
+    if rangeSelector:
+        range_selector = get_range_selector(df=df, column_date=column_date)
+        dict_range_selector = dict(
+            rangeselector=dict(buttons=range_selector)
+        )
+    if rangeSlider:
+        dict_range_slider = dict(
+            rangeslider=dict(visible=True)
+        )
+
+    return {**dict(type="date"), **dict(showgrid=True),**dict_range_selector, **dict_range_slider}
+
+def graph_dataframe(df: pd.DataFrame, x, y, color, value_label, title, rangeSelector=False, rangeSlider=False):
+
+    dict_xaxis = get_dict_range_selector_slider(df=df, column_date=x, rangeSelector=rangeSelector, rangeSlider=rangeSlider)
+
+    fig = px.bar(df, x=x, y=y, color_discrete_sequence=[color], labels={y: value_label}, title=title)
+    
+    fig.update_layout(
+        xaxis_tickangle=0,
+        xaxis=dict_xaxis,
+        yaxis=dict(tickformat=".3f", showgrid=True)
+    )
+
+    with st.container(border=True):
+        st.plotly_chart(fig, use_container_width=True, config=CONFIG_PX)
+
+    return
+
+def viwe_info_df_time(df: pd.DataFrame, column_date: str, column_label: str, rangeSelector=True, rangeSlider=True):
     
     fig = px.line(df, x="dates (Y-M-D hh:mm:ss)", y=column_label,
                   labels={
@@ -107,30 +161,45 @@ def viwe_info_df_time(df: pd.DataFrame, column_date: str, column_label: str, con
                         column_label: DICT_PARAMS_LABEL[column_label]["name"]
                   },
                   title=DICT_PARAMS_LABEL[column_label]["name"])
+    
+    dict_xaxis = get_dict_range_selector_slider(df=df, column_date=column_date, rangeSelector=rangeSelector, rangeSlider=rangeSlider)
 
-    fig.update_layout(
-        xaxis=dict(
-            rangeselector=dict(
-                buttons=range_selector
-            ),
-            rangeslider=dict(
-                visible=True
-            ),
-            type="date"
-        )
-    )
-
+    fig.update_layout(xaxis=dict_xaxis)
     fig.update_traces(line_color=DICT_PARAMS_LABEL[column_label]["color"])
 
     with st.container(border=True):
-        st.plotly_chart(fig, use_container_width=True, config=config)
+        st.plotly_chart(fig, use_container_width=True, config=CONFIG_PX)
 
     return
+
+def get_df_psh(df: pd.DataFrame, delta_minutes, column_label: str) -> pd.DataFrame:
+
+    list_psh, list_date = [], []
+
+    delta_t = delta_minutes/60
+    samples = int((1/delta_t)*24)
+
+    for i in range(0,int(df.shape[0]/samples),1):
+        lowerValue, upperValue = samples*i, samples*(i+1)-1
+
+        psh = round((df.loc[lowerValue:upperValue, column_label].sum()*delta_t)/1000, 2)
+        list_psh.append(psh)
+
+        date = df.loc[lowerValue, "dates (Y-M-D hh:mm:ss)"].date()
+        list_date.append(date)
+
+    df_out = pd.DataFrame({
+        "Fecha (Y-M-D)": list_date,
+        "HSP": list_psh
+    })
+
+    return df_out
 
 def view_dataframe_information(dataframe: pd.DataFrame):
 
     list_df_columns = list(dataframe.columns)
     list_columns_label, list_columns_tabs = get_list_tabs_graph_name(list_df_columns)
+    time_info = getTimeData(dataframe)
     
     if len(list_columns_tabs) == 1:
         subtab_con1 = st.tabs(list_columns_tabs)
@@ -151,7 +220,21 @@ def view_dataframe_information(dataframe: pd.DataFrame):
     for i in range(0,len(list_columns_label),1):
         with list_subtab_con[i]:
             if list_columns_label[i] != "Wind 10m" and list_columns_label[i] != "Wind 50m":
-                viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=list_columns_label[i], config=CONFIG_PX)
+                viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=list_columns_label[i])
+
+                if DICT_PARAMS_LABEL[list_columns_label[i]]["NASALabel"] == "ALLSKY_SFC_SW_DWN":
+                    #viwe_info_df_HSP(dataframe, time_info, column_label=list_columns_label[i])
+
+                    df_psh = get_df_psh(df=dataframe, delta_minutes=time_info["deltaMinutes"], column_label=list_columns_label[i])
+
+                    st.text(DICT_PARAMS_LABEL[list_columns_label[i]]["color"])
+
+                    
+
+                    graph_dataframe(df=df_psh, x="Fecha (Y-M-D)", y="HSP", color=DICT_PARAMS_LABEL[list_columns_label[i]]["color"],
+                                    value_label="Hora Solar Pico", title="Hora Solar Pico (HSP)", rangeSelector=True)
+
+                    #st.dataframe(df_psh)
             else:
                 if list_columns_label[i] == "Wind 10m":
                     wind_df_10 = windRose.make_wind_df(data_df=dataframe, ws_label=DICT_NASA_LABEL["WS10M"], wd_label=DICT_NASA_LABEL["WD10M"])
@@ -161,7 +244,7 @@ def view_dataframe_information(dataframe: pd.DataFrame):
                     tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "🌬️ Rosa de los vientos", "📊 Histograma"])
 
                     with tab1:
-                        viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=DICT_NASA_LABEL["WS10M"], config=CONFIG_PX)
+                        viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=DICT_NASA_LABEL["WS10M"])
                     with tab2:
                         windRose.plotly_windrose(wind_df=wind_df_10, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
                     with tab3:
@@ -175,7 +258,7 @@ def view_dataframe_information(dataframe: pd.DataFrame):
                     tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "🌬️ Rosa de los vientos", "📊 Histograma"])
 
                     with tab1:
-                        viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=DICT_NASA_LABEL["WS50M"],  config=CONFIG_PX)
+                        viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=DICT_NASA_LABEL["WS50M"])
                     with tab2:
                         windRose.plotly_windrose(wind_df=wind_df_50, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
                     with tab3:
