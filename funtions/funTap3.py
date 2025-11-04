@@ -34,14 +34,19 @@ def checkTimeData(df_data: pd.DataFrame, deltaMinutes: int):
 
     return checkTime, timeInfo
 
-def addLoadData(df_data: pd.DataFrame, df_loadResized: pd.DataFrame, columnLoad: str, timeInfo: dict):
+def addLoadData(df_data: pd.DataFrame, df_loadResized: pd.DataFrame, columnLoad: str, range_variation: tuple):
+
+    min_variation, max_variation = int(range_variation[0][:-1])/100, int(range_variation[1][:-1])/100
 
     df_data["Load(kW)"] = 0.0
 
     for i in range(0,int(df_data.shape[0]/24),1):
         lowerValue, upperValue = 24*i, 24*(i+1)-1
-        df_data.loc[lowerValue:upperValue, "Load(kW)"] = [val for val in df_loadResized[columnLoad].tolist()]
- 
+        variation = np.random.uniform(min_variation, max_variation, size=len(df_loadResized)).tolist()
+        list_values = df_loadResized[columnLoad].tolist()
+
+        df_data.loc[lowerValue:upperValue, "Load(kW)"] = [round(list_values[i]*(1+variation[i]), 3) for i in range(0,len(list_values),1)]
+
     return df_data
 
 def name_file_head(name: str) -> str:
@@ -245,7 +250,7 @@ def get_outForm3(df_data, dict_parameters):
 
     return
 
-def get_outForm3(df: pd.DataFrame):
+def get_outForm3(df_data: pd.DataFrame):
 
     dict_download = {
         "Xlsx": {
@@ -257,6 +262,6 @@ def get_outForm3(df: pd.DataFrame):
             }
     }
     
-    general.viewInformation(df_data=df, dict_params=None, dict_download=dict_download)
+    general.viewInformation(df_data=df_data, dict_params=None, dict_download=dict_download)
 
     return

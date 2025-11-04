@@ -370,15 +370,9 @@ def tab3():
             with col2:
                 kWh_day = st.number_input(label="Consumo (kWh/día)", min_value=0.0, max_value=100.0, format="%0.2f",
                                           step=0.01, value=default_kWh_day)
-                
             if typeLoad is not None:
-                columnLoad = f"{typeLoad} (kW)"
-                factor = kWh_day/df_loadPU[typeLoad].sum()
-                df_loadResized = df_loadPU.copy()
-                df_loadResized[columnLoad] = df_loadResized[typeLoad]*factor
-
-                with st.container(border=True):
-                    general.graph_dataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)")
+                df_loadResized = general.get_df_load_resized(df_loadPU, kWh_day, typeLoad)
+                general.graph_dataframe(df_loadResized, "Hora", f"{typeLoad} (kW)", "teal", "Potencia (kW)", "Curva De Demanda")
 
         elif typeLoad == opt_load_profile[1]:
             columnLoad = f"{typeLoad} (kW)"
@@ -431,8 +425,9 @@ def tab3():
                 with st.container(border=True):
                     general.graph_dataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)", False)
 
-        uploadedXlsxDATA = st.file_uploader(label=f"📋 **Cargar archivo {labelUploadedYamlDATA}**",
-                                            type=["xlsx"], key='uploadedXlsxDATA')
+        with st.container(border=True):
+            uploadedXlsxDATA = st.file_uploader(label=f"📋 **Cargar archivo {labelUploadedYamlDATA}**", type=["xlsx"], key="uploadedXlsxDATA")
+            range_variation = st.select_slider(label="Rango de variación de las muestras", options=[f"{-30+i}%" for i in range(0,61,1)], value=("-10%", "10%"))
             
         submittedTab3 = st.button("Aceptar")
 
@@ -443,7 +438,7 @@ def tab3():
                     checkTime, timeInfo = funTap3.checkTimeData(df_data, deltaMinutes=60)
 
                     if checkTime and df_loadResized is not None:
-                        df_data = funTap3.addLoadData(df_data, df_loadResized, columnLoad, timeInfo)
+                        df_data = funTap3.addLoadData(df_data, df_loadResized, f"{typeLoad} (kW)", range_variation)
 
                         st.session_state['dict_paramsForm3'] = {
                             "df_data": df_data,
@@ -455,11 +450,7 @@ def tab3():
                 st.error(f"Cargar archivo **{labelUploadedYamlDATA}**", icon="🚨")
 
     if st.session_state["dict_paramsForm3"] is not None:
-        df_data = st.session_state["dict_paramsForm3"]["df_data"]
-
-        
-
-        funTap3.get_outForm3(df_data)
+        funTap3.get_outForm3(**st.session_state['dict_paramsForm3'])
 
     return
 

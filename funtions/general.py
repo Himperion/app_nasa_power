@@ -134,7 +134,7 @@ def get_dict_range_selector_slider(df: pd.DataFrame, column_date: str, rangeSele
             rangeslider=dict(visible=True)
         )
 
-    return {**dict(type="date"), **dict(showgrid=True),**dict_range_selector, **dict_range_slider}
+    return {**dict(showgrid=True),**dict_range_selector, **dict_range_slider}
 
 def graph_dataframe(df: pd.DataFrame, x, y, color, value_label, title, rangeSelector=False, rangeSlider=False):
 
@@ -219,51 +219,48 @@ def view_dataframe_information(dataframe: pd.DataFrame):
 
     for i in range(0,len(list_columns_label),1):
         with list_subtab_con[i]:
-            if list_columns_label[i] != "Wind 10m" and list_columns_label[i] != "Wind 50m":
-                viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=list_columns_label[i])
+            
+            if list_columns_label[i] == DICT_NASA_LABEL["ALLSKY_SFC_SW_DWN"]:
+                df_psh = get_df_psh(df=dataframe, delta_minutes=time_info["deltaMinutes"], column_label=list_columns_label[i])
 
-                if DICT_PARAMS_LABEL[list_columns_label[i]]["NASALabel"] == "ALLSKY_SFC_SW_DWN":
-                    #viwe_info_df_HSP(dataframe, time_info, column_label=list_columns_label[i])
-
-                    df_psh = get_df_psh(df=dataframe, delta_minutes=time_info["deltaMinutes"], column_label=list_columns_label[i])
-
-                    st.text(DICT_PARAMS_LABEL[list_columns_label[i]]["color"])
-
-                    
-
+                tab1, tab2 = st.tabs(["📈 Gráfica de tiempo ", "📊 Histograma HSP"])
+                with tab1:
+                    viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=list_columns_label[i])
+                with tab2:
                     graph_dataframe(df=df_psh, x="Fecha (Y-M-D)", y="HSP", color=DICT_PARAMS_LABEL[list_columns_label[i]]["color"],
                                     value_label="Hora Solar Pico", title="Hora Solar Pico (HSP)", rangeSelector=True)
+            
+            elif list_columns_label[i] == "Wind 10m":
+                wind_df_10 = windRose.make_wind_df(data_df=dataframe, ws_label=DICT_NASA_LABEL["WS10M"], wd_label=DICT_NASA_LABEL["WD10M"])
+                color_discrete_map = windRose.get_colors_of_strength(wind_df_10)
+                column_name = DICT_PARAMS_LABEL[DICT_NASA_LABEL["WS10M"]]["name"]
 
-                    #st.dataframe(df_psh)
+                tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "🌬️ Rosa de los vientos", "📊 Histograma"])
+
+                with tab1:
+                    viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=DICT_NASA_LABEL["WS10M"])
+                with tab2:
+                    windRose.plotly_windrose(wind_df=wind_df_10, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
+                with tab3:
+                    windRose.plotly_windhist(wind_df=wind_df_10, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
+
+            elif list_columns_label[i] == "Wind 50m":
+                wind_df_50 = windRose.make_wind_df(data_df=dataframe, ws_label=DICT_NASA_LABEL["WS50M"], wd_label=DICT_NASA_LABEL["WD50M"])
+                color_discrete_map = windRose.get_colors_of_strength(wind_df_50)
+                column_name = DICT_PARAMS_LABEL[DICT_NASA_LABEL["WS50M"]]["name"]
+
+                tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "🌬️ Rosa de los vientos", "📊 Histograma"])
+
+                with tab1:
+                    viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=DICT_NASA_LABEL["WS50M"])
+                with tab2:
+                    windRose.plotly_windrose(wind_df=wind_df_50, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
+                with tab3:
+                    windRose.plotly_windhist(wind_df=wind_df_50, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
+
             else:
-                if list_columns_label[i] == "Wind 10m":
-                    wind_df_10 = windRose.make_wind_df(data_df=dataframe, ws_label=DICT_NASA_LABEL["WS10M"], wd_label=DICT_NASA_LABEL["WD10M"])
-                    color_discrete_map = windRose.get_colors_of_strength(wind_df_10)
-                    column_name = DICT_PARAMS_LABEL[DICT_NASA_LABEL["WS10M"]]["name"]
-
-                    tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "🌬️ Rosa de los vientos", "📊 Histograma"])
-
-                    with tab1:
-                        viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=DICT_NASA_LABEL["WS10M"])
-                    with tab2:
-                        windRose.plotly_windrose(wind_df=wind_df_10, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
-                    with tab3:
-                        windRose.plotly_windhist(wind_df=wind_df_10, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
-
-                elif list_columns_label[i] == "Wind 50m":
-                    wind_df_50 = windRose.make_wind_df(data_df=dataframe, ws_label=DICT_NASA_LABEL["WS50M"], wd_label=DICT_NASA_LABEL["WD50M"])
-                    color_discrete_map = windRose.get_colors_of_strength(wind_df_50)
-                    column_name = DICT_PARAMS_LABEL[DICT_NASA_LABEL["WS50M"]]["name"]
-
-                    tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "🌬️ Rosa de los vientos", "📊 Histograma"])
-
-                    with tab1:
-                        viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=DICT_NASA_LABEL["WS50M"])
-                    with tab2:
-                        windRose.plotly_windrose(wind_df=wind_df_50, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
-                    with tab3:
-                        windRose.plotly_windhist(wind_df=wind_df_50, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
- 
+                viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=list_columns_label[i])
+                
     return
 
 def viewInformation(df_data: pd.DataFrame, dict_params: dict, dict_download: dict):
@@ -294,3 +291,11 @@ def viewInformation(df_data: pd.DataFrame, dict_params: dict, dict_download: dic
                     on_click="ignore")
                 
     return
+
+def get_df_load_resized(df_loadPU: pd.DataFrame, kWh_day, typeLoad):
+
+    factor = kWh_day/df_loadPU[typeLoad].sum()
+    df_load_resized = df_loadPU.copy()
+    df_load_resized[f"{typeLoad} (kW)"] = df_load_resized[typeLoad]*factor
+
+    return df_load_resized
