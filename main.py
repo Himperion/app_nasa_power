@@ -1,27 +1,39 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import folium, warnings, io, yaml
+import folium, warnings, yaml
 import matplotlib.pyplot as plt
-import plotly.express as px
 from streamlit_folium import st_folium
-from datetime import date, timedelta
 
-from funtions import general, funTap1, funTap2, funTap3, funTap4
+from funtions import general, funTap1, funTap2, funTap3, funTap4, timeSteps
 
 warnings.filterwarnings("ignore")
 
 #%% cache_data
 
 @st.cache_data
+def get_outForm1(dict_params, dict_parameters, options, cal_rows):
+
+    data = funTap1.get_out(dict_params, dict_parameters, options, cal_rows)
+
+    return data
+
+@st.cache_data
+def get_outForm3(df_data, df_loadResized, columnLoad, range_variation):
+
+    data = funTap3.addLoadData(df_data, df_loadResized, columnLoad, range_variation)
+
+    return data
+
+@st.cache_data
 def get_outForm4(dict_params, constants_GD):
 
     n_samples = 60 // dict_params['deltaTime_m']
 
-    out = funTap3.create_dataframe_nsamples(dict_params['df_excel'], n_samples)
-    out = funTap3.modify_time_interval(out, dict_params['deltaTime_m'])
+    out = funTap3.create_dataframe_nsamples(dict_params["df_excel"], n_samples)
+    out = funTap3.modify_time_interval(out, dict_params["deltaTime_m"])
     out = funTap3.process_data(out, n_samples, dict_params, constants_GD)
-    excel_bytes = funTap3.get_excel_bytes(out)
+    excel_bytes = general.get_excel_bytes(out)
 
     return excel_bytes
 
@@ -34,6 +46,9 @@ items_options_columns_df = {
     "Geff" : ("Gef(W/m^2)", "Gef(W/m²)", "Gin(W/m²)", "Gin(W/m^2)"),
     "Tamb" : ("Tamb(°C)", "Tamb 2msnm(°C)")
 }
+
+dict_downloadTap1 = funTap1.dict_download
+dict_downloadTap3 = funTap3.dict_download
 
 min_value, max_value = general.get_date_imput_nasa()
 
@@ -82,16 +97,7 @@ list_tabs = [
     "⏱️ Aumentar número de muestras"
     ]
 
-selectDataEntryOptions = [
-    "🗺️ Mapa interactivo",
-    "📌 Datos del sitio",
-    "💾 Cargar archivo de datos del sitio YAML"
-    ]
 
-selectCoordinateOptions = [
-    "Sistema sexagesimal GMS",
-    "Sistema decimal GD"
-    ]
 
 latitude, longitude, data_dates = None, None, None
 
@@ -100,75 +106,55 @@ def tab1():
     st.session_state['dict_paramsForm4'] = None
 
     latitude, longitude = None, None
-
     flag_submittedTab1 = False
     
     st.header(list_tabs[0])
 
-    dataEntryOptions = st.selectbox(label="Opciones de ingreso de datos", options=selectDataEntryOptions,
+    dataEntryOptions = st.selectbox(label="Opciones de ingreso de datos", options=funTap1.selectDataEntryOptions,
                                     index=0, placeholder="Selecciona una opción")
     
-    if dataEntryOptions == selectDataEntryOptions[0]:
+    if dataEntryOptions == funTap1.selectDataEntryOptions[0]:
         flag_submittedTab1 = False
         click_map = folium.Map(location=[7.142056, -73.121231], zoom_start=18)
         click_marker = folium.LatLngPopup()
         click_map.add_child(click_marker)
 
         with st.container(height=400):
-            map_local = st_folium(click_map, width=700, height=400)
+            map_local = st_folium(click_map, height=367, use_container_width=True)
 
         if map_local and map_local["last_clicked"]:
             coords = map_local["last_clicked"]
-            latitude = round(coords['lat'], 5)
-            longitude = round(coords['lng'], 5)
+            latitude, longitude = round(coords['lat'], 5), round(coords['lng'], 5)
 
-            st.markdown(f"**:blue[Latitud:]** {latitude} **:blue[Longitud:]** {longitude}")
+            with st.container(border=False):
+                col1, col2, col3, col4 = st.columns([0.2, 0.3, 0.3, 0.2])
 
-    elif dataEntryOptions == selectDataEntryOptions[1]:
+                col2.markdown(f"**:blue[Latitud:]** {latitude}")
+                col3.markdown(f"**:blue[Longitud:]** {longitude}")
+
+    elif dataEntryOptions == funTap1.selectDataEntryOptions[1]:
         flag_submittedTab1 = False
         coordinate_options = st.selectbox(label="Opciones de ingreso de coordenadas geográficas",
-                                          options=selectCoordinateOptions,
+                                          options=funTap1.selectCoordinateOptions,
                                           index=1, placeholder="Selecciona una opción")
         
         with st.container(border=True):
             st.markdown("🌎 **:blue[{0}:]**".format("Datos del sitio"))
-        
-            if coordinate_options == selectCoordinateOptions[0]:
-                with st.container(border=True):
-                    col1, col2, col3, col4 = st.columns(4)
+            if coordinate_options == funTap1.selectCoordinateOptions[0]:
+                latitude, longitude = funTap1.get_GMS_2_GD()
+            elif coordinate_options == funTap1.selectCoordinateOptions[1]:
+                latitude, longitude = funTap1.get_number_input_latitude_longitude(lat_value=7.142056, lon_value=-73.12123)
 
-                    NS = col1.selectbox("**Latitud:**", ["N", "S"], index=0)
-                    lat_degrees = col2.number_input(label="Grados", min_value=0, value=7)
-                    lat_minutes = col3.number_input(label="Minutos", min_value=0, value=8)
-                    lat_seconds = col4.number_input(label="Segundos", min_value=0.0, format="%.4f", value=31.4016)
-
-                with st.container(border=True):
-                    col1, col2, col3, col4 = st.columns(4)
-
-                    EO = col1.selectbox("**Longitud:**", ["W", "E"], index=0)
-                    lon_degrees = col2.number_input(label="Grados", min_value=0, value=73)
-                    lon_minutes = col3.number_input(label="Minutos", min_value=0, value=7)
-                    lon_seconds = col4.number_input(label="Segundos", min_value=0.0, format="%.4f", value=16.4316)
-
-            elif coordinate_options == selectCoordinateOptions[1]:
-                col1, col2 = st.columns(2)
-
-                lat_input = col1.number_input('Ingrese la latitud:', min_value=-90.0, max_value=90.0, step=0.000001, format="%.6f", value=7.142056)
-                lon_input = col2.number_input('Ingrese la longitud:', min_value=-180.0, max_value=180.0, step=0.000001, format="%.6f", value=-73.121231)
-
-    elif dataEntryOptions == selectDataEntryOptions[2]:
+    elif dataEntryOptions == funTap1.selectDataEntryOptions[2]:
         flag_submittedTab1 = False
         with st.container(border=True):
             uploadedFileYaml = st.file_uploader(label="Sube tu archivo YAML", type=["yaml", "yml"])
 
     with st.form('form1'):
-        if dataEntryOptions == selectDataEntryOptions[0] or dataEntryOptions == selectDataEntryOptions[1]:
-            
+        if dataEntryOptions == funTap1.selectDataEntryOptions[0] or dataEntryOptions == funTap1.selectDataEntryOptions[1]:
             with st.container(border=True):
                 st.markdown("🗓️ **:blue[{0}:]**".format("Estampa de tiempo"))
-
                 col1, col2 = st.columns(2)
-
                 date_ini = col1.date_input("Fecha de Inicio:", max_value=min_value)
                 date_end = col2.date_input("Fecha Final:", max_value=max_value)
 
@@ -178,7 +164,7 @@ def tab1():
         submittedTab1 = st.form_submit_button("Aceptar")
 
         if submittedTab1:
-            if dataEntryOptions == selectDataEntryOptions[0]:
+            if dataEntryOptions == funTap1.selectDataEntryOptions[0] or dataEntryOptions == funTap1.selectDataEntryOptions[1]:
                 if latitude is not None and longitude is not None:
                     st.session_state['dict_paramsForm1'] = {
                         "latitude": float(latitude),
@@ -190,32 +176,7 @@ def tab1():
                 else:
                     st.warning("Ingrese una latitud y longitud en el mapa interactivo", icon="⚠️")
  
-            elif dataEntryOptions == selectDataEntryOptions[1]:
-                if coordinate_options == selectCoordinateOptions[0]:
-                    st.session_state['dict_paramsForm1'] = funTap1.GMS_2_GD({
-                        "lat_NS": NS,
-                        "lat_degrees": lat_degrees,
-                        "lat_minutes": lat_minutes,
-                        "lat_seconds": lat_seconds,
-                        "lon_EO": EO,
-                        "lon_degrees": lon_degrees,
-                        "lon_minutes": lon_minutes,
-                        "lon_seconds": lon_seconds,
-                        "date_ini": date_ini,
-                        "date_end": date_end,
-                        })
-                    flag_submittedTab1 = True
-                        
-                elif coordinate_options == selectCoordinateOptions[1]:
-                    st.session_state['dict_paramsForm1'] = {
-                        "latitude": lat_input,
-                        "longitude": lon_input,
-                        "start": date_ini,
-                        "end": date_end
-                        }
-                    flag_submittedTab1 = True
-                    
-            elif dataEntryOptions == selectDataEntryOptions[2]:
+            elif dataEntryOptions == funTap1.selectDataEntryOptions[2]:
                 if uploadedFileYaml is not None:
                     try:
                         st.session_state['dict_paramsForm1'] = yaml.safe_load(uploadedFileYaml)
@@ -225,22 +186,20 @@ def tab1():
                 else:
                     st.warning("Cargar archivo **YAML** (.yaml)", icon="⚠️")
 
-                
     if st.session_state['dict_paramsForm1'] is not None and flag_submittedTab1:   
         dict_params = st.session_state['dict_paramsForm1']
         cal_rows = funTap1.cal_rows(dict_params["start"], dict_params["end"], steps=60)
 
         if len(options) != 0:
             if cal_rows > 0:
-            
                 dict_outForm1 = {
                     "dict_params" : dict_params,
                     "dict_parameters": dict_parameters,
                     "options": options,
                     "cal_rows": cal_rows
                 }
-
-                funTap1.get_outForm1(**dict_outForm1)
+                data = get_outForm1(**dict_outForm1)
+                general.viewInformation(data, dict_params, dict_downloadTap1)
      
             else:
                 if cal_rows == 0:
@@ -372,7 +331,7 @@ def tab3():
                                           step=0.01, value=default_kWh_day)
             if typeLoad is not None:
                 df_loadResized = general.get_df_load_resized(df_loadPU, kWh_day, typeLoad)
-                general.graph_dataframe(df_loadResized, "Hora", f"{typeLoad} (kW)", "teal", "Potencia (kW)", "Curva De Demanda")
+                general.graphDataframe(df_loadResized, "Hora", f"{typeLoad} (kW)", "teal", "Potencia (kW)", "Curva De Demanda")
 
         elif typeLoad == opt_load_profile[1]:
             columnLoad = f"{typeLoad} (kW)"
@@ -442,6 +401,9 @@ def tab3():
 
                         st.session_state['dict_paramsForm3'] = {
                             "df_data": df_data,
+                            "df_loadResized": df_loadResized,
+                            "columnLoad": f"{typeLoad} (kW)",
+                            "range_variation": range_variation
                             }
 
                 except:
@@ -450,7 +412,8 @@ def tab3():
                 st.error(f"Cargar archivo **{labelUploadedYamlDATA}**", icon="🚨")
 
     if st.session_state["dict_paramsForm3"] is not None:
-        funTap3.get_outForm3(**st.session_state['dict_paramsForm3'])
+        data = get_outForm3(**st.session_state["dict_paramsForm3"])
+        general.viewInformation(data, None, dict_downloadTap3)
 
     return
 
@@ -661,8 +624,8 @@ def tab4():
             excel_bytes = get_outForm4(dict_paramsForm4, constants_GD)
 
             st.download_button(label="Descargar archivo procesado",
-                            data=excel_bytes.read(),
-                            file_name=outputFilename)
+                               data=excel_bytes.read(),
+                               file_name=outputFilename)
         
     return
 

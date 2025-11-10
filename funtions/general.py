@@ -4,8 +4,8 @@ import streamlit as st
 import datetime as dt
 import plotly.express as px
 
-from funtions import windRose
-from data.param import DICT_PARAMS_NAME, DICT_PARAMS_LABEL, DICT_NASA_LABEL
+from funtions import windRose, timeSteps
+from data.param import DICT_PARAMS, DICT_PARAMS_LABEL_KEY, DICT_KEY_LABEL, DICT_PARAMS_WIND, DICT_PARAMS_LABEL
 
 CONFIG_PX ={
         "displayModeBar": True,
@@ -20,24 +20,37 @@ time_info = {
     "label": "Fecha (A-M-D hh:mm:ss)"
 }
 
-def to_excel(df: pd.DataFrame):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Sheet1")
-    
-    processed_data = output.getvalue()
-        
-    return processed_data
+def nameFileHead(name: str) -> str:
+    now = dt.datetime.now()
+    return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
 
-def get_bytes_yaml(dictionary: dict):
+def getBytesYaml(dictionary: dict):
 
     yaml_data = yaml.dump(dictionary, allow_unicode=True)
-
     buffer = io.BytesIO()
     buffer.write(yaml_data.encode('utf-8'))
     buffer.seek(0)
 
     return buffer
+
+def toExcelResults(df: pd.DataFrame) -> bytes:
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Sheet1")
+
+    return output.getvalue()
+
+def toExcelAnalysisTime(df_daily: pd.DataFrame, df_monthly: pd.DataFrame, df_annual: pd.DataFrame):
+    output = io.BytesIO()
+
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df_daily.to_excel(writer, index=False, sheet_name="DailyData")
+        if df_monthly is not None:
+            df_monthly.to_excel(writer, index=False, sheet_name="MonthlyData")
+        if df_annual is not None:
+            df_annual.to_excel(writer, index=False, sheet_name="AnnualData")
+
+    return output.getvalue()
 
 def resource_path(relative_path: str):
 
@@ -48,10 +61,6 @@ def resource_path(relative_path: str):
 
     return os.path.join(base_path, relative_path)
 
-def name_file_head(name: str) -> str:
-    now = dt.datetime.now()
-    return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
-
 def get_date_imput_nasa() -> tuple[dt.date, dt.date]:
 
     date_now = dt.date.today() - dt.timedelta(days=250)
@@ -60,72 +69,82 @@ def get_date_imput_nasa() -> tuple[dt.date, dt.date]:
 
     return min_value, max_value
 
-def getTimeData(df_data: pd.DataFrame) -> dict:
+def getTimeData(df: pd.DataFrame) -> dict:
 
     timeInfo = {}
+    numberRows = df.shape[0]
 
-    if "dates (Y-M-D hh:mm:ss)" in df_data.columns:
-        time_0 = df_data.loc[0, "dates (Y-M-D hh:mm:ss)"].to_pydatetime()
-        time_1 = df_data.loc[1, "dates (Y-M-D hh:mm:ss)"].to_pydatetime()
+    if "dates (Y-M-D hh:mm:ss)" in df.columns:
+        time_0 = df.loc[0, "dates (Y-M-D hh:mm:ss)"].to_pydatetime()
+        time_1 = df.loc[1, "dates (Y-M-D hh:mm:ss)"].to_pydatetime()
 
         timeInfo["deltaMinutes"] = (time_1 - time_0).total_seconds()/60
         timeInfo["dateIni"] = time_0
-        timeInfo["dateEnd"] = df_data.loc[df_data.index[-1], "dates (Y-M-D hh:mm:ss)"].to_pydatetime()
-        timeInfo["deltaDays"] = (timeInfo['dateEnd'] - timeInfo['dateIni']).days
+        timeInfo["dateEnd"] = df.loc[df.index[-1], "dates (Y-M-D hh:mm:ss)"].to_pydatetime()
+        timeInfo["deltaDays"] = (numberRows*timeInfo["deltaMinutes"])/1440
+        timeInfo["years"] = df["dates (Y-M-D hh:mm:ss)"].dt.year.unique().tolist()
+
+        listAuxMonth = []
+        for year in timeInfo["years"]:
+            df_year: pd.DataFrame = df[df["dates (Y-M-D hh:mm:ss)"].dt.year == year]
+
+            list_month = df_year["dates (Y-M-D hh:mm:ss)"].dt.month.unique().tolist()
+            listAuxMonth.append(list_month)
+
+        timeInfo["months"] = listAuxMonth
+        timeInfo["deltaMonths"] = sum([len(elm) for elm in listAuxMonth])
+        timeInfo["deltaYears"] = len(timeInfo["years"])
 
     return timeInfo
 
-def get_range_selector(df: pd.DataFrame, column_date: str) -> list:
+def getRangeSelector(timeInfo: dict) -> list:
 
-    range_days = (df[column_date].max() - df[column_date].min()).days
     range_selector = []
 
-    if range_days > 1:
-        range_selector.append(dict(count=1, label="1D", step="day", stepmode="backward"))
-    if range_days > 6:
+    if timeInfo["deltaDays"] >= 7:
         range_selector.append(dict(count=7, label="1S", step="day", stepmode="backward"))
-    if range_days > 29:
+    if timeInfo["deltaMonths"] >= 1:
         range_selector.append(dict(count=1, label="1M", step="month", stepmode="backward"))
-    if range_days > 180:
+    if timeInfo["deltaMonths"] >= 6:
         range_selector.append(dict(count=6, label="6M", step="month", stepmode="backward"))
-    if range_days > 364:
+    if timeInfo["deltaYears"] >= 1:
         range_selector.append(dict(count=1, label="1A", step="year", stepmode="backward"))
 
     range_selector.append(dict(step="all", label="MAX."))
 
     return list(range_selector)
 
-def get_list_tabs_graph_name(list_df_columns: list) -> tuple[list, list]:
+def fixListColumnsKey(listFix: list, remove_wd: str, remove_ws: str, add_w: str) -> list:
 
-    list_columns_tabs = []
+    listFix.remove(remove_wd)
+    listFix.remove(remove_ws)
+    listFix.append(add_w)
 
-    list_params_label = list(DICT_PARAMS_LABEL.keys())
-    list_columns_label = [item for item in list_df_columns if item in list_params_label]
+    return listFix
 
-    if DICT_NASA_LABEL["WD10M"] in list_columns_label and DICT_NASA_LABEL["WS10M"] in list_columns_label:
-        list_columns_label.remove(DICT_NASA_LABEL["WD10M"])
-        list_columns_label.remove(DICT_NASA_LABEL["WS10M"])
-        list_columns_label.append("Wind 10m")
+def getListsTabsGraph(listDfColumns: list) -> tuple[list, list, list]:
 
-    if DICT_NASA_LABEL["WD50M"] in list_columns_label and DICT_NASA_LABEL["WS50M"] in list_columns_label:
-        list_columns_label.remove(DICT_NASA_LABEL["WD50M"])
-        list_columns_label.remove(DICT_NASA_LABEL["WS50M"])
-        list_columns_label.append("Wind 50m")
+    listParamsLabel = list(DICT_PARAMS_LABEL_KEY.keys())
+    listColumnsKeys = [DICT_PARAMS_LABEL_KEY[item] for item in listDfColumns if item in listParamsLabel]
+    listColumnsLabel, listColumnsTabs = [], []
 
-    for item in list_columns_label:
-        if item in list_params_label:
-            list_columns_tabs.append(f"{DICT_PARAMS_LABEL[item]['emoji']} {item}")
-        elif item == "Wind 10m" or item == "Wind 50m":
-            list_columns_tabs.append(f"🪁 {item}")
+    if "WD10M" in listColumnsKeys and "WS10M" in listColumnsKeys:
+        listColumnsKeys = fixListColumnsKey(listColumnsKeys, remove_wd="WD10M", remove_ws="WS10M", add_w="W10M")
+    if "WD50M" in listColumnsKeys and "WS50M" in listColumnsKeys:
+        listColumnsKeys = fixListColumnsKey(listColumnsKeys, remove_wd="WD50M", remove_ws="WS50M", add_w="W50M")
 
-    return list_columns_label, list_columns_tabs
+    for item in listColumnsKeys:
+        listColumnsLabel.append(DICT_PARAMS[item]["Label"])
+        listColumnsTabs.append(f"{DICT_PARAMS[item]['Emoji']} {DICT_PARAMS[item]['Label']}")
 
-def get_dict_range_selector_slider(df: pd.DataFrame, column_date: str, rangeSelector: bool, rangeSlider: bool) -> dict:
+    return listColumnsKeys, listColumnsLabel, listColumnsTabs
+
+def getDictRangeSelectorSlider(timeInfo: dict|None, rangeSelector: bool, rangeSlider: bool) -> dict:
 
     dict_range_selector, dict_range_slider = {}, {}
     
-    if rangeSelector:
-        range_selector = get_range_selector(df=df, column_date=column_date)
+    if rangeSelector and timeInfo is not None:
+        range_selector = getRangeSelector(timeInfo=timeInfo)
         dict_range_selector = dict(
             rangeselector=dict(buttons=range_selector)
         )
@@ -136,16 +155,15 @@ def get_dict_range_selector_slider(df: pd.DataFrame, column_date: str, rangeSele
 
     return {**dict(showgrid=True),**dict_range_selector, **dict_range_slider}
 
-def graph_dataframe(df: pd.DataFrame, x, y, color, value_label, title, rangeSelector=False, rangeSlider=False):
+def graphDataframe(df: pd.DataFrame, x, y, color, value_label, title, timeInfo: dict|None=None, rangeSelector=False, rangeSlider=False):
 
-    dict_xaxis = get_dict_range_selector_slider(df=df, column_date=x, rangeSelector=rangeSelector, rangeSlider=rangeSlider)
+    dict_xaxis = getDictRangeSelectorSlider(timeInfo=timeInfo, rangeSelector=rangeSelector, rangeSlider=rangeSlider)
 
     fig = px.bar(df, x=x, y=y, color_discrete_sequence=[color], labels={y: value_label}, title=title)
     
     fig.update_layout(
         xaxis_tickangle=0,
-        xaxis=dict_xaxis,
-        yaxis=dict(tickformat=".3f", showgrid=True)
+        xaxis=dict_xaxis
     )
 
     with st.container(border=True):
@@ -153,144 +171,161 @@ def graph_dataframe(df: pd.DataFrame, x, y, color, value_label, title, rangeSele
 
     return
 
-def viwe_info_df_time(df: pd.DataFrame, column_date: str, column_label: str, rangeSelector=True, rangeSlider=True):
+def viwe_info_df_time(df: pd.DataFrame, timeInfo: dict, column_label: str, rangeSelector=True, rangeSlider=True):
+
+    key = DICT_PARAMS_LABEL_KEY[column_label]
     
     fig = px.line(df, x="dates (Y-M-D hh:mm:ss)", y=column_label,
                   labels={
                         time_info["name"]: time_info["label"],
-                        column_label: DICT_PARAMS_LABEL[column_label]["name"]
+                        column_label: DICT_PARAMS[key]["Name"]
                   },
-                  title=DICT_PARAMS_LABEL[column_label]["name"])
+                  title=DICT_PARAMS[key]["Name"])
     
-    dict_xaxis = get_dict_range_selector_slider(df=df, column_date=column_date, rangeSelector=rangeSelector, rangeSlider=rangeSlider)
+    dict_xaxis = getDictRangeSelectorSlider(timeInfo=timeInfo, rangeSelector=rangeSelector, rangeSlider=rangeSlider)
 
     fig.update_layout(xaxis=dict_xaxis)
-    fig.update_traces(line_color=DICT_PARAMS_LABEL[column_label]["color"])
+    fig.update_traces(line_color=DICT_PARAMS[key]["Color"])
 
     with st.container(border=True):
         st.plotly_chart(fig, use_container_width=True, config=CONFIG_PX)
 
     return
 
-def get_df_psh(df: pd.DataFrame, delta_minutes, column_label: str) -> pd.DataFrame:
+def viewDataframeWind(df: pd.DataFrame, key: str, timeInfo: dict):
 
-    list_psh, list_date = [], []
-
-    delta_t = delta_minutes/60
-    samples = int((1/delta_t)*24)
-
-    for i in range(0,int(df.shape[0]/samples),1):
-        lowerValue, upperValue = samples*i, samples*(i+1)-1
-
-        psh = round((df.loc[lowerValue:upperValue, column_label].sum()*delta_t)/1000, 2)
-        list_psh.append(psh)
-
-        date = df.loc[lowerValue, "dates (Y-M-D hh:mm:ss)"].date()
-        list_date.append(date)
-
-    df_out = pd.DataFrame({
-        "Fecha (Y-M-D)": list_date,
-        "HSP": list_psh
-    })
-
-    return df_out
-
-def view_dataframe_information(dataframe: pd.DataFrame):
-
-    list_df_columns = list(dataframe.columns)
-    list_columns_label, list_columns_tabs = get_list_tabs_graph_name(list_df_columns)
-    time_info = getTimeData(dataframe)
+    ws_key, wd_key = DICT_PARAMS_WIND[key]["WS"], DICT_PARAMS_WIND[key]["WD"]
+    ws_label, wd_label = DICT_PARAMS[ws_key]["Label"], DICT_PARAMS[wd_key]["Label"]
+    columnName = DICT_PARAMS[ws_key]["Name"]
     
-    if len(list_columns_tabs) == 1:
-        subtab_con1 = st.tabs(list_columns_tabs)
-        list_subtab_con = [subtab_con1[0]]
-    elif len(list_columns_tabs) == 2:
-        subtab_con1, subtab_con2 = st.tabs(list_columns_tabs)
-        list_subtab_con = [subtab_con1, subtab_con2]
-    elif len(list_columns_tabs) == 3:
-        subtab_con1, subtab_con2, subtab_con3 = st.tabs(list_columns_tabs)
-        list_subtab_con = [subtab_con1, subtab_con2, subtab_con3]
-    elif len(list_columns_tabs) == 4:
-        subtab_con1, subtab_con2, subtab_con3, subtab_con4 = st.tabs(list_columns_tabs)
-        list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4]
-    elif len(list_columns_tabs) == 5:
-        subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5 = st.tabs(list_columns_tabs)
-        list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5]
+    wind_df = windRose.make_wind_df(data_df=df, ws_label=ws_label, wd_label=wd_label)
+    color_discrete_map = windRose.get_colors_of_strength(wind_df)
 
-    for i in range(0,len(list_columns_label),1):
-        with list_subtab_con[i]:
-            
-            if list_columns_label[i] == DICT_NASA_LABEL["ALLSKY_SFC_SW_DWN"]:
-                df_psh = get_df_psh(df=dataframe, delta_minutes=time_info["deltaMinutes"], column_label=list_columns_label[i])
+    tab1, tab2, tab3, tab4 = st.tabs(["📈 Gráfica de tiempo ", "🌬️ Rosa de los vientos", "📊 Histograma", "💾 Descargas"])
 
-                tab1, tab2 = st.tabs(["📈 Gráfica de tiempo ", "📊 Histograma HSP"])
+    with tab1:
+        viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=ws_label)
+    with tab2:
+        windRose.plotly_windrose(wind_df=wind_df, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=columnName)
+    with tab3:
+        windRose.plotly_windhist(wind_df=wind_df, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=columnName)
+    with tab4:
+        dictWindDownload = {
+            "Xlsx": {
+                "label": "Datos histograma de velocidad del viento",
+                "type_file": "xlsx",
+                "fileName": f"PES_histWind_{key}",
+                "nime": "xlsx",
+                "emoji": "📄",
+                "key": f"PES_histWind_{key}",
+                "type": "secondary"
+            }
+        }
+
+        getDownloadButtons(dictDownload=dictWindDownload, df=wind_df, dictionary=None)
+
+    return
+
+def view_dataframe_information(df: pd.DataFrame):
+
+    listColumnsKeys, listColumnsLabel, listColumnsTabs = getListsTabsGraph(listDfColumns=df)
+    timeInfo = getTimeData(df)
+    listSubTabCon = []
+    df_day, df_month, df_year = None, None, None
+    
+    if len(listColumnsTabs) == 1:
+        subtab_con1 = st.tabs(listColumnsTabs)
+        listSubTabCon = [subtab_con1[0]]
+    elif len(listColumnsTabs) == 2:
+        subtab_con1, subtab_con2 = st.tabs(listColumnsTabs)
+        listSubTabCon = [subtab_con1, subtab_con2]
+    elif len(listColumnsTabs) == 3:
+        subtab_con1, subtab_con2, subtab_con3 = st.tabs(listColumnsTabs)
+        listSubTabCon = [subtab_con1, subtab_con2, subtab_con3]
+    elif len(listColumnsTabs) == 4:
+        subtab_con1, subtab_con2, subtab_con3, subtab_con4 = st.tabs(listColumnsTabs)
+        listSubTabCon = [subtab_con1, subtab_con2, subtab_con3, subtab_con4]
+    elif len(listColumnsTabs) == 5:
+        subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5 = st.tabs(listColumnsTabs)
+        listSubTabCon = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5]
+
+    if "ALLSKY_SFC_SW_DWN" in listColumnsKeys or "LOAD" in listColumnsKeys:
+        df_day, df_month, df_year = timeSteps.getDfsTimeLapse(df=df, timeInfo=timeInfo)
+
+    for i in range(0,len(listColumnsKeys),1):
+        with listSubTabCon[i]:
+            if listColumnsKeys[i] == "ALLSKY_SFC_SW_DWN":
+                tab1, tab2 = st.tabs(["📈 Gráfica de tiempo ", "📊 Diagrama Hora Solar Pico"])
                 with tab1:
-                    viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=list_columns_label[i])
-                with tab2:
-                    graph_dataframe(df=df_psh, x="Fecha (Y-M-D)", y="HSP", color=DICT_PARAMS_LABEL[list_columns_label[i]]["color"],
-                                    value_label="Hora Solar Pico", title="Hora Solar Pico (HSP)", rangeSelector=True)
-            
-            elif list_columns_label[i] == "Wind 10m":
-                wind_df_10 = windRose.make_wind_df(data_df=dataframe, ws_label=DICT_NASA_LABEL["WS10M"], wd_label=DICT_NASA_LABEL["WD10M"])
-                color_discrete_map = windRose.get_colors_of_strength(wind_df_10)
-                column_name = DICT_PARAMS_LABEL[DICT_NASA_LABEL["WS10M"]]["name"]
-
-                tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "🌬️ Rosa de los vientos", "📊 Histograma"])
-
+                    viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=listColumnsLabel[i])
+                with tab2:    
+                    timeSteps.viewDfsTimeLapse("ALLSKY_SFC_SW_DWN", df_day, df_month, df_year, timeInfo)
+            elif listColumnsKeys[i] == "LOAD":
+                tab1, tab2 = st.tabs(["📈 Gráfica de tiempo ", "📊 Perfil de demanda eléctrica"])
                 with tab1:
-                    viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=DICT_NASA_LABEL["WS10M"])
+                    viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=listColumnsLabel[i])
                 with tab2:
-                    windRose.plotly_windrose(wind_df=wind_df_10, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
-                with tab3:
-                    windRose.plotly_windhist(wind_df=wind_df_10, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
-
-            elif list_columns_label[i] == "Wind 50m":
-                wind_df_50 = windRose.make_wind_df(data_df=dataframe, ws_label=DICT_NASA_LABEL["WS50M"], wd_label=DICT_NASA_LABEL["WD50M"])
-                color_discrete_map = windRose.get_colors_of_strength(wind_df_50)
-                column_name = DICT_PARAMS_LABEL[DICT_NASA_LABEL["WS50M"]]["name"]
-
-                tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "🌬️ Rosa de los vientos", "📊 Histograma"])
-
-                with tab1:
-                    viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=DICT_NASA_LABEL["WS50M"])
-                with tab2:
-                    windRose.plotly_windrose(wind_df=wind_df_50, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
-                with tab3:
-                    windRose.plotly_windhist(wind_df=wind_df_50, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=column_name)
-
+                    timeSteps.viewDfsTimeLapse("LOAD", df_day, df_month, df_year, timeInfo)
+                    
+            elif  listColumnsKeys[i] == "W10M" or listColumnsKeys[i] == "W50M":
+                viewDataframeWind(df=df,  key=listColumnsKeys[i], timeInfo=timeInfo)        
             else:
-                viwe_info_df_time(dataframe, column_date="dates (Y-M-D hh:mm:ss)", column_label=list_columns_label[i])
+                viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=listColumnsLabel[i])
                 
+    return df_day, df_month, df_year
+
+#%% streamlit funtions
+
+def getDownloadButtons(dictDownload: dict, df: pd.DataFrame, dictionary: dict|None):
+
+    for _, value in dictDownload.items():
+        if value["type_file"] == "xlsx":
+            bytesFile = toExcelResults(df=df)
+        elif value["type_file"] == "yaml":
+            bytesFile = getBytesYaml(dictionary=dictionary)
+
+        st.download_button(
+            label=f"{value['emoji']} Descargar **:blue[{value['label']}] {value['type_file'].upper()}**",
+            data=bytesFile,
+            file_name=nameFileHead(name=f"{value['fileName']}.{value['type_file']}"),
+            mime=value["nime"],
+            on_click="ignore",
+            key=value["key"],
+            type=value["type"])
+            
     return
 
 def viewInformation(df_data: pd.DataFrame, dict_params: dict, dict_download: dict):
+
+    df_day, df_month, df_year = None, None, None
 
     sub_tab1, sub_tab2, sub_tab3 = st.tabs(["📋 Parámetros", "📈 Gráficas", "💾 Descargas"])
 
     with sub_tab1:
         with st.container(border=True):
             st.dataframe(df_data)
-
     with sub_tab2:
         with st.container(border=True):
-            view_dataframe_information(df_data)
-
+            df_day, df_month, df_year = view_dataframe_information(df_data)
     with sub_tab3:
         with st.container(border=True):
-            for key, value in dict_download.items():
-                if value['type'] == 'xlsx':
-                    bytesFile = to_excel(df_data)
-                elif value['type'] == 'yaml':
-                    bytesFile = get_bytes_yaml(dict_params)
+            getDownloadButtons(dictDownload=dict_download, df=df_data, dictionary=dict_params)
+
+            if df_day is not None and (df_month is not None or df_year is not None):
+                bytesFile = toExcelAnalysisTime(df_day, df_month, df_year)
 
                 st.download_button(
-                    label=f"{value['emoji']} Descargar **:blue[{value['label']}] {value['type'].upper()}**",
+                    label="📄 Descargar **:blue[Datos en estampas de tiempo] XLSX**",
                     data=bytesFile,
-                    file_name=name_file_head(name=f"{value['fileName']}.{value['type']}"),
-                    mime=value['nime'],
-                    on_click="ignore")
-                
+                    file_name=nameFileHead(name="dataTimeStamps.xlsx"),
+                    mime="xlsx",
+                    on_click="ignore",
+                    type="secondary"
+                )
+  
     return
+
+# revisar
 
 def get_df_load_resized(df_loadPU: pd.DataFrame, kWh_day, typeLoad):
 

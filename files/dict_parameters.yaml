@@ -1,42 +1,50 @@
-"Direcci\xF3n del viento a 10m (\xB0)":
+"Direcci\xF3n del viento a 10 m (\xB0)":
   NASALabel: WD10M
-  columnLabel: "Dwind 10m(\xB0)"
+  columnLabel: "Dwind 10 m (\xB0)"
   emoji: "\U0001FA81"
   color: '#4169E1'
+  key: WD10M
 "Direcci\xF3n del viento a 50m (\xB0)":
   NASALabel: WD50M
-  columnLabel: "Dwind 50m(\xB0)"
+  columnLabel: "Dwind 50 m (\xB0)"
   emoji: "\U0001FA81"
   color: '#0044FF'
+  key: WD50M
 Irradiancia (W/m^2):
   NASALabel: ALLSKY_SFC_SW_DWN
-  columnLabel: "Gin(W/m\xB2)"
+  columnLabel: "Gin (W/m\xB2)"
   emoji: "\U0001F324\uFE0F"
   color: '#FFA500'
+  key: ALLSKY_SFC_SW_DWN
 "Perfil de demanda el\xE9ctrica":
   NASALabel: null
-  columnLabel: Load(kW)
+  columnLabel: Load (kW)
   emoji: "\U0001F50C"
   color: '#069494'
-"Temperatura ambiente a 2m(\xB0C)":
+  key: LOAD
+"Temperatura ambiente (\xB0C)":
   NASALabel: T2M
-  columnLabel: "Tamb 2m(\xB0C)"
+  columnLabel: "Tamb (\xB0C)"
   emoji: "\U0001F321\uFE0F"
   color: '#DC143C'
+  key: T2M
 "Temperatura de operaci\xF3n del modulo fotovoltaico":
   NASALabel: null
-  columnLabel: "Toper(\xB0C)"
+  columnLabel: "Toper (\xB0C)"
   emoji: "\U0001F321\uFE0F"
   color: '#8B0000'
-Velocidad del viento a 10m (m/s):
+  key: TOPER
+Velocidad del viento a 10 m (m/s):
   NASALabel: WS10M
-  columnLabel: Vwind 10m(m/s)
+  columnLabel: Vwind 10 m (m/s)
   emoji: "\u2708\uFE0F"
   color: '#4169E1'
-Velocidad del viento a 50m (m/s):
+  key: WS10M
+Velocidad del viento a 50 m (m/s):
   NASALabel: WS50M
-  columnLabel: Vwind 50m(m/s)
+  columnLabel: Vwind 50 m (m/s)
   emoji: "\u2708\uFE0F"
   color: '#0044FF'
+  key: WS50M
   
   

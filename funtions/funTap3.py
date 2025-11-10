@@ -6,6 +6,19 @@ from datetime import datetime, timedelta
 import plotly.express as px
 
 from funtions import general
+from data.param import DICT_KEY_LABEL
+
+dict_download = {
+    "Xlsx": {
+        "label": "Consumo eléctrico",
+        "type_file": "xlsx",
+        "fileName": "PES_addLoad",
+        "nime": "xlsx",
+        "emoji": "📄",
+        "key": "PES_addLoad",
+        "type": "primary"
+    }
+}
 
 def getTimeData(df_data: pd.DataFrame) -> dict:
 
@@ -38,14 +51,14 @@ def addLoadData(df_data: pd.DataFrame, df_loadResized: pd.DataFrame, columnLoad:
 
     min_variation, max_variation = int(range_variation[0][:-1])/100, int(range_variation[1][:-1])/100
 
-    df_data["Load(kW)"] = 0.0
+    df_data[DICT_KEY_LABEL["LOAD"]] = 0.0
 
     for i in range(0,int(df_data.shape[0]/24),1):
         lowerValue, upperValue = 24*i, 24*(i+1)-1
         variation = np.random.uniform(min_variation, max_variation, size=len(df_loadResized)).tolist()
         list_values = df_loadResized[columnLoad].tolist()
 
-        df_data.loc[lowerValue:upperValue, "Load(kW)"] = [round(list_values[i]*(1+variation[i]), 3) for i in range(0,len(list_values),1)]
+        df_data.loc[lowerValue:upperValue, DICT_KEY_LABEL["LOAD"]] = [round(list_values[i]*(1+variation[i]), 3) for i in range(0,len(list_values),1)]
 
     return df_data
 
@@ -100,7 +113,7 @@ def aplicar_gradient(row, n_samples, alpha, tol, iter_max, variation, data_colum
 
     return new_rows
 
-def create_dataframe_nsamples(df_excel, n_samples):
+def create_dataframe_nsamples(df_excel: pd.DataFrame, n_samples):
     out = pd.DataFrame()
     for col in df_excel.columns:
         out[col] = df_excel[col].repeat(n_samples).reset_index(drop=True)
@@ -130,14 +143,6 @@ def process_data(out: pd.DataFrame, n_samples: int, dict_params:dict, constants_
 
     return out
 
-def get_excel_bytes(out: pd.DataFrame):
-
-    excel_bytes_io = io.BytesIO()
-    out.to_excel(excel_bytes_io, index=False)
-    excel_bytes_io.seek(0)
-
-    return excel_bytes_io
-
 def to_excel(df: pd.DataFrame):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -166,102 +171,3 @@ def get_list_tabs_graph(list_data_columns: list, list_options_columns_name: list
             list_tabs_graph_label.append(list_options_columns_label[list_options_columns_name.index(list_data_columns[i])])
 
     return list_tabs_graph_name, list_tabs_graph_label
-
-def view_dataframe_information(dataframe: pd.DataFrame, dict_parameters: dict):
-
-    listOptionsColumnsName = [dict_parameters[key]["columnLabel"] for key in dict_parameters]
-    listOptionsColumnsLabel = [f"{dict_parameters[key]['emoji']} {dict_parameters[key]['columnLabel']}" for key in dict_parameters]
-
-    list_tabs_graph_name, list_tabs_graph_label = get_list_tabs_graph(list(dataframe.columns),
-                                                                      listOptionsColumnsName,
-                                                                      listOptionsColumnsLabel)
-     
-    if len(list_tabs_graph_name) != 0:
-        if len(list_tabs_graph_name) == 1:
-            subtab_con1 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1[0]]
-        elif len(list_tabs_graph_name) == 2:
-            subtab_con1, subtab_con2 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1, subtab_con2]
-        elif len(list_tabs_graph_name) == 3:
-            subtab_con1, subtab_con2, subtab_con3 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1, subtab_con2, subtab_con3]
-        elif len(list_tabs_graph_name) == 4:
-            subtab_con1, subtab_con2, subtab_con3, subtab_con4 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4]
-        elif len(list_tabs_graph_name) == 5:
-            subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5]
-        elif len(list_tabs_graph_name) == 6:
-            subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6 = st.tabs(list_tabs_graph_label)
-            list_subtab_con = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6]
-
-        for i in range(0,len(list_subtab_con),1):
-            with list_subtab_con[i]:
-                st.line_chart(data=dataframe[[list_tabs_graph_name[i]]], y=list_tabs_graph_name[i])
-
-    return
-
-
-def viewInformation(df_data: pd.DataFrame, dict_params: dict, dict_download: dict, dict_parameters):
-
-    sub_tab1, sub_tab2, sub_tab3 = st.tabs(["📋 Parámetros", "📈 Gráficas", "💾 Descargas"])
-
-    with sub_tab1:
-        with st.container(border=True):
-            st.dataframe(df_data)
-
-    with sub_tab2:
-        with st.container(border=True):
-            view_dataframe_information(df_data, dict_parameters)
-
-    with sub_tab3:
-        with st.container(border=True):
-            for key, value in dict_download.items():
-                if value['type'] == 'xlsx':
-                    bytesFile = to_excel(df_data)
-                elif value['type'] == 'yaml':
-                    bytesFile = get_bytes_yaml(dict_params)
-
-                st.download_button(
-                    label=f"{value['emoji']} Descargar **:blue[{value['label']}] {value['type'].upper()}**",
-                    data=bytesFile,
-                    file_name=name_file_head(name=f"{value['fileName']}.{value['type']}"),
-                    mime=value['nime'])
-                
-    return
-
-def get_outForm3(df_data, dict_parameters):
-
-    dict_download = {
-        "Xlsx": {
-            "label": "Consumo eléctrico",
-            "type": "xlsx",
-            "fileName": "PES_addLoad",
-            "nime": "xlsx",
-            "emoji": "📄"
-            }
-    }
-    
-    viewInformation(df_data=df_data,
-                    dict_params=None,
-                    dict_download=dict_download,
-                    dict_parameters=dict_parameters)
-
-    return
-
-def get_outForm3(df_data: pd.DataFrame):
-
-    dict_download = {
-        "Xlsx": {
-            "label": "Consumo eléctrico",
-            "type": "xlsx",
-            "fileName": "PES_addLoad",
-            "nime": "xlsx",
-            "emoji": "📄"
-            }
-    }
-    
-    general.viewInformation(df_data=df_data, dict_params=None, dict_download=dict_download)
-
-    return

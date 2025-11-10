@@ -78,7 +78,7 @@ def plotly_windrose(wind_df: pd.DataFrame, color_discrete_map: dict, config: dic
                            "frequency": "Frecuencia",
                            "direction": "Dirección"
                        },
-                       title=f"Rosa de los Vientos ({column_name})"
+                       title=f"Rosa de los Vientos - {column_name}"
                    )
     
     fig.update_polars(
@@ -110,7 +110,7 @@ def plotly_windhist(wind_df: pd.DataFrame, color_discrete_map: dict, config: dic
         y="frequency",
         color="strength",
         color_discrete_map=color_discrete_map,
-        title=f"Frecuencia por Dirección y Rango ({column_name})",
+        title=f"Frecuencia por Dirección y Rango - {column_name}",
         labels={
             "direction": "Dirección",
             "frequency": "Frecuencia(%)",
