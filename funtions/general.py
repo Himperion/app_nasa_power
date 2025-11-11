@@ -5,7 +5,7 @@ import datetime as dt
 import plotly.express as px
 
 from funtions import windRose, timeSteps
-from data.param import DICT_PARAMS, DICT_PARAMS_LABEL_KEY, DICT_KEY_LABEL, DICT_PARAMS_WIND, DICT_PARAMS_LABEL
+from data.param import DICT_PARAMS, DICT_PARAMS_LABEL_KEY, DICT_PARAMS_WIND, DICT_TIME
 
 CONFIG_PX ={
         "displayModeBar": True,
@@ -177,7 +177,7 @@ def viwe_info_df_time(df: pd.DataFrame, timeInfo: dict, column_label: str, range
     
     fig = px.line(df, x="dates (Y-M-D hh:mm:ss)", y=column_label,
                   labels={
-                        time_info["name"]: time_info["label"],
+                        "dates (Y-M-D hh:mm:ss)": DICT_TIME["dates (Y-M-D hh:mm:ss)"]["Name"],
                         column_label: DICT_PARAMS[key]["Name"]
                   },
                   title=DICT_PARAMS[key]["Name"])
@@ -295,7 +295,7 @@ def getDownloadButtons(dictDownload: dict, df: pd.DataFrame, dictionary: dict|No
             
     return
 
-def viewInformation(df_data: pd.DataFrame, dict_params: dict, dict_download: dict):
+def viewInformation(df_data: pd.DataFrame, dict_params: dict|None, dict_download: dict):
 
     df_day, df_month, df_year = None, None, None
 

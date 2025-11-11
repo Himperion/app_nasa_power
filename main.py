@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import datetime as dt
 import folium, warnings, yaml
 import matplotlib.pyplot as plt
 from streamlit_folium import st_folium
 
-from funtions import general, funTap1, funTap2, funTap3, funTap4, timeSteps
+from funtions import general, funTap1, funTap2, funTap3, funTap4, geoData
 
 warnings.filterwarnings("ignore")
 
@@ -15,6 +16,13 @@ warnings.filterwarnings("ignore")
 def get_outForm1(dict_params, dict_parameters, options, cal_rows):
 
     data = funTap1.get_out(dict_params, dict_parameters, options, cal_rows)
+
+    return data
+
+@st.cache_data
+def get_outForm2(df, optionsSel, NOCT):
+
+    data = funTap2.getColumnToper(df, optionsSel, NOCT)
 
     return data
 
@@ -42,12 +50,8 @@ def get_outForm4(dict_params, constants_GD):
 with open(general.resource_path("files//dict_parameters.yaml"), 'r') as archivo:
     dict_parameters = yaml.safe_load(archivo)
 
-items_options_columns_df = {
-    "Geff" : ("Gef(W/m^2)", "Gef(W/m²)", "Gin(W/m²)", "Gin(W/m^2)"),
-    "Tamb" : ("Tamb(°C)", "Tamb 2msnm(°C)")
-}
-
 dict_downloadTap1 = funTap1.dict_download
+dict_downloadTap2 = funTap2.dict_download
 dict_downloadTap3 = funTap3.dict_download
 
 min_value, max_value = general.get_date_imput_nasa()
@@ -82,6 +86,9 @@ NOCT = {
 if 'dict_paramsForm1' not in st.session_state:
     st.session_state['dict_paramsForm1'] = None
 
+if 'dict_paramsForm2' not in st.session_state:
+    st.session_state['dict_paramsForm2'] = None
+
 if 'dict_paramsForm3' not in st.session_state:
     st.session_state['dict_paramsForm3'] = None
 
@@ -97,13 +104,29 @@ list_tabs = [
     "⏱️ Aumentar número de muestras"
     ]
 
-
-
 latitude, longitude, data_dates = None, None, None
 
+def home():
+
+    st.title("Herramientas de caracterización")
+    st.markdown("Aplicación web diseñada para la ayuda en **caracterización de proyectos de generación eléctrica**, esta permite analizar y obtener información espacio-temporal de variables climáticas y de consumo eléctrico. Los datos resultantes se consolidan en un archivo **Excel** esencial para las siguientes fases de estudio.")
+
+    st.header("🌤️ **Datos climáticos y potencial energético**", divider="green")
+    st.markdown("Esta sección permite obtener lecturas horarias de variables climáticas clave como la **irradiancia**, **temperatura ambiente**, y la **velocidad y dirección del viento**. Estas lecturas provienen del sistema **NASA POWER** (Prediction Of Worldwide Energy Resources), que genera sus datos mediante la combinación de **observaciones satelitales** y **modelos matemáticos** de asimilación global.")
+    st.markdown(
+            "<p style='font-size: 0.9em; color: gray;'>🔗<a href='https://power.larc.nasa.gov/' target='_blank'>NASA POWER</a></p>",
+            unsafe_allow_html=True
+        )
+
+    st.header("🔌 **Consumo eléctrico**", divider="green")
+    st.markdown("Esta funcionalidad permite la **incorporación de perfiles de carga eléctrica** basados en plantillas predeterminadas o definidos por el usuario.")
+
+    return
+
 def tab1():
-    st.session_state['dict_paramsForm3'] = None
-    st.session_state['dict_paramsForm4'] = None
+    st.session_state["dict_paramsForm2"] = None
+    st.session_state["dict_paramsForm3"] = None
+    st.session_state["dict_paramsForm4"] = None
 
     latitude, longitude = None, None
     flag_submittedTab1 = False
@@ -127,8 +150,10 @@ def tab1():
             latitude, longitude = round(coords['lat'], 5), round(coords['lng'], 5)
 
             with st.container(border=False):
-                col1, col2, col3, col4 = st.columns([0.2, 0.3, 0.3, 0.2])
+                country, flag = geoData.getCountryAndFlag(lat=latitude, lon=longitude)
 
+                col1, col2, col3, col4 = st.columns([0.25, 0.25, 0.25, 0.25])
+                col1.markdown(f"**:blue[{country}:]** {flag}")
                 col2.markdown(f"**:blue[Latitud:]** {latitude}")
                 col3.markdown(f"**:blue[Longitud:]** {longitude}")
 
@@ -216,6 +241,7 @@ def tab2():
     st.session_state['dict_paramsForm3'] = None
     st.session_state['dict_paramsForm4'] = None
 
+    flag_submittedTab2 = None
     archive_Gef_Tamb = None
 
     st.header(list_tabs[1])
@@ -265,7 +291,7 @@ def tab2():
             check = False
             try:
                 df_input = pd.read_excel(archive_Gef_Tamb)
-                df_input, check, columns_options_sel = funTap2.check_dataframe_input(dataframe=df_input, options=items_options_columns_df)
+                df_input, check, optionsSel = funTap2.check_dataframe_input(dataframe=df_input)
             except:
                 st.error("Error al cargar archivo **Excel** (.xlsx)", icon="🚨")
 
@@ -277,36 +303,25 @@ def tab2():
                     submitted_formTab2 = st.form_submit_button("Aceptar")
 
                 if submitted_formTab2:
-                    df_output = funTap2.get_column_Toper(dataframe=df_input,
-                                                        options_sel=columns_options_sel,
-                                                        NOCT=inputNOCT,
-                                                        column_name="Toper(°C)")
-                    
-                    sub_tab1, sub_tab2, sub_tab3 = st.tabs(["📋 Parámetros", "📈 Gráficas", "💾 Descargas"])
+                    st.session_state["dict_paramsForm2"] = {
+                        "df": df_input,
+                        "optionsSel": optionsSel,
+                        "NOCT": inputNOCT,
+                    }
 
-                    with sub_tab1:
-                        with st.container(border=True):
-                            st.dataframe(df_output)
-
-                    with sub_tab2:
-                        with st.container(border=True):
-                            funTap2.view_dataframe_information(df_output, dict_parameters)
-
-                    with sub_tab3:
-                        excel = funTap2.to_excel(df_output)
-                        with st.container(border=True):
-                            st.download_button(
-                                label="📄 Descargar **:blue[Temperatura de operación del módulo]** del sitio **XLSX**",
-                                data=excel,
-                                file_name=funTap2.name_file_head(name="PES_addToper.xlsx"),
-                                mime="xlsx")
+                    flag_submittedTab2 = True
+                      
+    if st.session_state["dict_paramsForm2"] is not None and flag_submittedTab2: 
+        data = get_outForm2(**st.session_state["dict_paramsForm2"])                        
+        general.viewInformation(data, None, dict_downloadTap2)
                 
     return
 
 def tab3():
 
-    st.session_state['dict_paramsForm1'] = None
-    st.session_state['dict_paramsForm4'] = None
+    st.session_state["dict_paramsForm1"] = None
+    st.session_state["dict_paramsForm2"] = None
+    st.session_state["dict_paramsForm4"] = None
 
     labelUploadedYamlDATA = 'Datos climáticos y potencial energético del sitio'
 
@@ -335,54 +350,43 @@ def tab3():
 
         elif typeLoad == opt_load_profile[1]:
             columnLoad = f"{typeLoad} (kW)"
-            factor = default_kWh_day/df_loadPU["Comercial"].sum()
-            default_kWh_hour = [round(row["Comercial"]*factor, 3) for index, row in df_loadPU.iterrows()]
-            
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                with st.container(border=True):
-                    hour_00 = st.number_input(label="00:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[0], key="hour_00")
-                    hour_01 = st.number_input(label="01:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[1], key="hour_01")
-                    hour_02 = st.number_input(label="02:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[2], key="hour_02")
-                    hour_03 = st.number_input(label="03:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[3], key="hour_03")
-                    hour_04 = st.number_input(label="04:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[4], key="hour_04")
-                    hour_05 = st.number_input(label="05:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[5], key="hour_05")
-            with col2:
-                with st.container(border=True):
-                    hour_06 = st.number_input(label="06:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[6], key="hour_06")
-                    hour_07 = st.number_input(label="07:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[7], key="hour_07")
-                    hour_08 = st.number_input(label="08:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[8], key="hour_08")
-                    hour_09 = st.number_input(label="09:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[9], key="hour_09")
-                    hour_10 = st.number_input(label="10:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[10], key="hour_10")
-                    hour_11 = st.number_input(label="11:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[11], key="hour_11")
-            with col3:
-                with st.container(border=True):
-                    hour_12 = st.number_input(label="12:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[12], key="hour_12")
-                    hour_13 = st.number_input(label="13:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[13], key="hour_13")
-                    hour_14 = st.number_input(label="14:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[14], key="hour_14")
-                    hour_15 = st.number_input(label="15:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[15], key="hour_15")
-                    hour_16 = st.number_input(label="16:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[16], key="hour_16")
-                    hour_17 = st.number_input(label="17:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[17], key="hour_17")
-            with col4:
-                with st.container(border=True):
-                    hour_18 = st.number_input(label="18:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[18], key="hour_18")
-                    hour_19 = st.number_input(label="19:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[19], key="hour_19")
-                    hour_20 = st.number_input(label="20:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[20], key="hour_20")
-                    hour_21 = st.number_input(label="21:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[21], key="hour_21")
-                    hour_22 = st.number_input(label="22:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[22], key="hour_22")
-                    hour_23 = st.number_input(label="23:00", min_value=0.0, max_value=100.0, step=0.001, format="%0.3f", value=default_kWh_hour[23], key="hour_23")
-   
-            load_time_stamp = [hour_00, hour_01, hour_02, hour_03, hour_04, hour_05,
-                               hour_06, hour_07, hour_08, hour_09, hour_10, hour_11,
-                               hour_12, hour_13, hour_14, hour_15, hour_16, hour_17,
-                               hour_18, hour_19, hour_20, hour_21, hour_22, hour_23]
-            
-            df_loadResized = pd.DataFrame(load_time_stamp, columns=[columnLoad])
-            df_loadResized["Hora"] = list(range(0,24,1))
+            with st.container(border=True):
+                
+                st.markdown("📊 **:blue[{0}:]**".format("Perfil de carga"))
 
-            if df_loadResized is not None:
-                with st.container(border=True):
-                    general.graph_dataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)", False)
+                col1, col2 = st.columns(2, vertical_alignment="bottom")
+                
+                radioLoad = col1.radio(label="Opciones para el ingreso de perfil de carga",
+                                       options=["W", "kW", "P.U."],
+                                       captions=["Ingreso de muestras en Watts (W)", "Ingreso de muestras en kilovatios (kW)", "Ingreso demuestras en sistema POR-UNIDAD"])
+                
+                if radioLoad == "P.U.":
+                    kWh_day = col2.number_input(label="Consumo (kWh/día)", min_value=0.0, max_value=100.0, format="%0.2f",
+                                                step=0.01, value=default_kWh_day)
+                else:
+                    kWh_day = None
+
+                uploadedXlsxLOAD = st.file_uploader(label=f"📋 Cargar archivo **perfil de carga eléctrica**", type=["xlsx"], key="uploadedXlsxLOAD")
+
+                if uploadedXlsxLOAD is not None:
+                    df_loadResized = funTap3.get_dfLoadProfile(uploadedXlsx=uploadedXlsxLOAD, optionLoad=radioLoad, kWh_day=kWh_day, columnLoad=columnLoad)
+                if df_loadResized is not None:
+                    general.graphDataframe(df_loadResized, "Hora", f"{typeLoad} (kW)", "teal", "Potencia (kW)", "Curva De Demanda")
+
+
+                with open("files/[Plantilla] - AddLoad.xlsx", "rb") as file:
+                    st.download_button(label="Descargar plantilla **:blue[Perfil de carga eléctrica]**:", data=file, icon="📄",
+                                       file_name="IngresoPerfilDeCarga.xlsx", mime="xlsx")
+
+
+            
+            
+            # df_loadResized = pd.DataFrame(load_time_stamp, columns=[columnLoad])
+            # df_loadResized["Hora"] = list(range(0,24,1))
+
+            # if df_loadResized is not None:
+            #     with st.container(border=True):
+            #         general.graphDataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)", False)
 
         with st.container(border=True):
             uploadedXlsxDATA = st.file_uploader(label=f"📋 **Cargar archivo {labelUploadedYamlDATA}**", type=["xlsx"], key="uploadedXlsxDATA")
@@ -417,7 +421,7 @@ def tab3():
 
     return
 
-def tab4():
+def tab5():
     st.session_state['dict_paramsForm1'] = None
     st.session_state['dict_paramsForm3'] = None
     
@@ -630,9 +634,14 @@ def tab4():
     return
 
 pg = st.navigation([
+    st.Page(home, title="🏠 Generalidades"),
     st.Page(tab1, title=list_tabs[0]),
     st.Page(tab2, title=list_tabs[1]),
     st.Page(tab3, title=list_tabs[2]),
-    #st.Page(tab4, title=list_tabs[3]),
 ])
 pg.run()
+
+with st.sidebar:
+    with st.expander("**Recursos**", icon="🖥️"):
+
+        st.link_button("Sistemas de Generación Eléctrica", "https://apps-energy-generation-e3t.streamlit.app/", icon="3️⃣", type="tertiary")

@@ -47,6 +47,32 @@ def checkTimeData(df_data: pd.DataFrame, deltaMinutes: int):
 
     return checkTime, timeInfo
 
+def get_dfLoadProfile(uploadedXlsx, optionLoad: str, kWh_day: float|None, columnLoad: str) -> pd.DataFrame|None:
+
+    dfLoadProfile = None
+
+    try:
+        dfLoadProfile = pd.read_excel(uploadedXlsx)
+        if "Hora" in dfLoadProfile.columns.to_list() and "Datos" in dfLoadProfile.columns.to_list():
+            if (24, 2) == dfLoadProfile.shape:
+                if optionLoad == "P.U.":
+                    factor = kWh_day/dfLoadProfile["Datos"].sum()
+                    dfLoadProfile[columnLoad] = round(dfLoadProfile["Datos"]*factor, 5)
+                    dfLoadProfile.drop("Datos", axis=1, inplace=True)
+                elif optionLoad == "kW":
+                    dfLoadProfile.rename(columns={"Datos": columnLoad})
+                elif optionLoad == "W":
+                    dfLoadProfile[columnLoad] = round(dfLoadProfile["Datos"]/1000, 6)
+                    dfLoadProfile.rename(columns={"Datos": columnLoad})
+            else:
+                st.error("Se deben respetar las dimensiones de la plantilla: **Perfil de carga eléctrica**", icon="🚨")
+        else:
+            st.error("Se deben respetar los nombres en las columnas de la plantilla: **Perfil de carga eléctrica**", icon="🚨")
+    except:
+        st.error("Error al cargar archivo **EXCEL** (.xlsx)", icon="🚨")
+
+    return dfLoadProfile
+
 def addLoadData(df_data: pd.DataFrame, df_loadResized: pd.DataFrame, columnLoad: str, range_variation: tuple):
 
     min_variation, max_variation = int(range_variation[0][:-1])/100, int(range_variation[1][:-1])/100

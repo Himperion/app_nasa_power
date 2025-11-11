@@ -4,10 +4,19 @@ from datetime import datetime
 from io import BytesIO
 
 from funtions import general
+from data.param import DICT_PARAMS
 
-def name_file_head(name: str) -> str:
-    now = datetime.now()
-    return f"[{now.day}-{now.month}-{now.year}_{now.hour}-{now.minute}] {name}"
+dict_download = {
+    "Xlsx": {
+        "label": "Temperatura de operación del módulo",
+        "type_file": "xlsx",
+        "fileName": "PES_addToper",
+        "nime": "xlsx",
+        "emoji": "📄",
+        "key": "PES_addToper",
+        "type": "primary"
+    }
+}
 
 def get_label_params(dict_param: dict) -> str:
 
@@ -27,12 +36,18 @@ def get_download_button(directory: str, name_file: str, format_file: str, descri
                 
     return
 
-def check_dataframe_input(dataframe: pd.DataFrame, options: list):
+def check_dataframe_input(dataframe: pd.DataFrame):
 
     columns_options, columns_options_sel, columns_options_check = {}, {}, {}
     columns_options_drop, check = [], True
 
     header = dataframe.columns
+    options = {item:DICT_PARAMS[item]["Label"]  for item in ["ALLSKY_SFC_SW_DWN", "T2M"]}
+
+    # items_options_columns_df = {
+    #     "Geff" : ("Gin (W/m²)"),
+    #     "Tamb" : ("Tamb (°C)")
+    # }
 
     for key in options:
         list_options = options[key]
@@ -64,11 +79,11 @@ def check_dataframe_input(dataframe: pd.DataFrame, options: list):
 
     return dataframe, check, columns_options_sel
 
-def get_column_Toper(dataframe: pd.DataFrame, options_sel: dict, NOCT: int, column_name: str) -> pd.DataFrame:
+def getColumnToper(df: pd.DataFrame, optionsSel: dict, NOCT: int) -> pd.DataFrame:
 
-    dataframe[column_name] = dataframe[options_sel["Tamb"]] + (NOCT-20)*(dataframe[options_sel["Geff"]]/800)
+    df[DICT_PARAMS["TOPER"]["Label"]] = df[optionsSel["T2M"]] + (NOCT-20)*(df[optionsSel["ALLSKY_SFC_SW_DWN"]]/800)
 
-    return dataframe
+    return df
 
 def to_excel(df: pd.DataFrame):
     output = BytesIO()
