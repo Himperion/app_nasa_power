@@ -252,6 +252,56 @@ def view_dataframe_information(df: pd.DataFrame):
     if "ALLSKY_SFC_SW_DWN" in listColumnsKeys or "LOAD" in listColumnsKeys:
         df_day, df_month, df_year = timeSteps.getDfsTimeLapse(df=df, timeInfo=timeInfo)
 
+
+        # heatmap
+        # if "ALLSKY_SFC_SW_DWN" in listColumnsKeys:
+        #     for year in timeInfo["years"]:
+        #         df_heatmap: pd.DataFrame = df[df["dates (Y-M-D hh:mm:ss)"].dt.year == year]
+        #         df_heatmap["dateOfYear"] = df_heatmap["dates (Y-M-D hh:mm:ss)"].dt.date
+        #         df_heatmap["dayOfYear"] = df_heatmap["dates (Y-M-D hh:mm:ss)"].dt.dayofyear
+        #         df_heatmap["hourOfDay"] = df_heatmap["dates (Y-M-D hh:mm:ss)"].dt.hour
+
+        #         pivot = df_heatmap.pivot_table(
+        #             index="hourOfDay",
+        #             columns="dateOfYear",
+        #             values=DICT_PARAMS["ALLSKY_SFC_SW_DWN"]["Label"],
+        #             aggfunc="mean"
+        #         )
+
+        #         st.dataframe(pivot)
+
+        #         fig = px.imshow(
+        #             pivot,
+        #             aspect="auto",
+        #             color_continuous_scale="Turbo",
+        #             origin="lower",
+        #             labels={
+        #                 "x": "Fecha",
+        #                 "y": "Hora",
+        #                 "color": DICT_PARAMS["ALLSKY_SFC_SW_DWN"]["Name"]
+        #             }
+        #         )
+
+        #         fig.update_xaxes(
+        #             tickformat="%d-%m-%Y",       # Formato de fecha
+        #             tickangle=0
+        #             )
+
+        #         fig.update_layout(
+        #             title="Heatmap de Irradiancia Solar (W/m²)",
+        #             xaxis_nticks=12    # menos saturado
+        #         )
+
+        #         with st.container(border=True):
+        #             st.plotly_chart(fig, use_container_width=True, config=CONFIG_PX)
+                
+                
+
+            
+
+        
+        # Aca la modificación
+
     for i in range(0,len(listColumnsKeys),1):
         with listSubTabCon[i]:
             if listColumnsKeys[i] == "ALLSKY_SFC_SW_DWN":

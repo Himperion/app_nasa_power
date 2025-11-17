@@ -633,15 +633,14 @@ def tab5():
         
     return
 
-pg = st.navigation([
-    st.Page(home, title="🏠 Generalidades"),
-    st.Page(tab1, title=list_tabs[0]),
-    st.Page(tab2, title=list_tabs[1]),
-    st.Page(tab3, title=list_tabs[2]),
-])
-pg.run()
-
 with st.sidebar:
     with st.expander("**Recursos**", icon="🖥️"):
-
         st.link_button("Sistemas de Generación Eléctrica", "https://apps-energy-generation-e3t.streamlit.app/", icon="3️⃣", type="tertiary")
+
+pg = st.navigation([
+    st.Page(home, title="🏠 Generalidades"),
+    st.Page(tab1, title=list_tabs[0]),          # 1. Datos climaticos
+    st.Page(tab2, title=list_tabs[1]),          # 2. Temperatura de operación
+    st.Page(tab3, title=list_tabs[2]),          # 3. Consumo eléctrico
+])
+pg.run()
