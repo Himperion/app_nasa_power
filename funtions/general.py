@@ -223,9 +223,13 @@ def viewDataframeWind(df: pd.DataFrame, key: str, timeInfo: dict):
 
         getDownloadButtons(dictDownload=dictWindDownload, df=wind_df, dictionary=None)
     with tab3:
-        windRose.plotly_histWS(df=df, ws_key=ws_key, ws_label=ws_label, ws_name=ws_name, ws_color=ws_color, config=CONFIG_PX)
-        
+        tab3sub1, tab3sub2 = st.tabs(["📊 Histograma", "🔥 Heatmaps"])
 
+        with tab3sub1:
+            windRose.plotly_histWS(df=df, ws_key=ws_key, ws_label=ws_label, ws_name=ws_name, ws_color=ws_color, config=CONFIG_PX)
+        with tab3sub2:
+            heatmaps.get_heatmaps(df=df, timeInfoYears=timeInfo["years"], Label=ws_label, Name=ws_name, config_PX=CONFIG_PX)
+        
     return
 
 def view_dataframe_information(df: pd.DataFrame):
@@ -253,18 +257,12 @@ def view_dataframe_information(df: pd.DataFrame):
 
     if "ALLSKY_SFC_SW_DWN" in listColumnsKeys or "LOAD" in listColumnsKeys:
         df_day, df_month, df_year = timeSteps.getDfsTimeLapse(df=df, timeInfo=timeInfo)
-
-
-        # heatmap
-        # if "ALLSKY_SFC_SW_DWN" in listColumnsKeys:
-        #     for year in timeInfo["years"]:
        
-
     for i in range(0,len(listColumnsKeys),1):
         columnKey = listColumnsKeys[i]
         with listSubTabCon[i]:
             if columnKey == "ALLSKY_SFC_SW_DWN" or columnKey == "LOAD":
-                tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", f"📊 Diagrama de barras", "🔥 Heatmaps"])
+                tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "📊 Diagrama de barras", "🔥 Heatmaps"])
                 with tab1:
                     viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=listColumnsLabel[i])
                 with tab2:    
