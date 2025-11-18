@@ -640,7 +640,7 @@ with st.sidebar:
 pg = st.navigation([
     st.Page(home, title="🏠 Generalidades"),
     st.Page(tab1, title=list_tabs[0]),          # 1. Datos climaticos
-    st.Page(tab2, title=list_tabs[1]),          # 2. Temperatura de operación
+    #st.Page(tab2, title=list_tabs[1]),          # 2. Temperatura de operación
     st.Page(tab3, title=list_tabs[2]),          # 3. Consumo eléctrico
 ])
 pg.run()

@@ -3,6 +3,8 @@ import numpy as np
 import plotly.express as px
 import streamlit as st
 
+from funtions import general
+
 DIRECTION_NAMES = ("N","NNE","NE","ENE"
                    ,"E","ESE","SE","SSE"
                    ,"S","SSW","SW","WSW"
@@ -136,5 +138,62 @@ def plotly_windhist(wind_df: pd.DataFrame, color_discrete_map: dict, config: dic
 
     with st.container(border=True):
         st.plotly_chart(fig, use_container_width=True, config=config)
+
+    return
+
+def plotly_histWS(df: pd.DataFrame, ws_key: str, ws_label: str, ws_name: str, ws_color: str, config: dict):
+
+    df_hist = df[["dates (Y-M-D hh:mm:ss)", ws_label]].copy()
+
+    bins = np.arange(0, np.ceil(df_hist[ws_label].max()/0.5)*0.5 + 0.5, 0.5)
+    binsLabels = [f"[{bins[i]}, {round(bins[i+1], 1)})" for i in range(len(bins)-1)]
+
+    df_hist["ws_inter"] = pd.cut(df_hist[ws_label], bins=bins, labels=binsLabels, include_lowest=True, right=False)
+
+    fig = px.histogram(
+        df_hist,
+        x="ws_inter",
+        histnorm="percent",
+        labels={"ws_inter": ws_name},
+        title=f"Histograma de {ws_name}",
+        color_discrete_sequence=[ws_color]
+    )
+
+    fig.update_layout(
+        xaxis={
+            'categoryorder': 'array',
+            'categoryarray': binsLabels
+        },
+        yaxis_title="Frecuencia (%)"
+    )
+
+    fig.update_traces(
+        hovertemplate=(
+            f"<b>{ws_name}</b> %{{x}}<br>" 
+            "<b>Frecuencia</b>: %{y:.2f}%"
+            "<extra></extra>" 
+        ),
+        selector=dict(type="histogram")
+    )
+    
+    fig.update_yaxes(tickformat=".2f%")
+    fig.update_layout(bargap=0.05)
+
+    with st.container(border=True):
+        st.plotly_chart(fig, use_container_width=True, config=config)
+
+        dictDownload = {
+            "Xlsx": {
+                "label": f"Datos histograma de {ws_name}",
+                "type_file": "xlsx",
+                "fileName": f"PES_hist{ws_key}",
+                "nime": "xlsx",
+                "emoji": "📄",
+                "key": f"PES_hist{ws_key}",
+                "type": "secondary"
+            }
+        }
+
+        general.getDownloadButtons(dictDownload=dictDownload, df=df_hist, dictionary=None)
 
     return

@@ -53,7 +53,7 @@ DICT_PARAMS = {
     },
     "LOAD": {
         "Label": "Load (kW)",
-        "Name": "Perfil de demanda eléctrica (kW)",
+        "Name": "Demanda (kW)",
         "NASALabel": None,
         "Emoji": "💡",
         "Color": "#069494",
@@ -62,7 +62,7 @@ DICT_PARAMS = {
         "Label": "Tamb (°C)",
         "Name": "Temperatura ambiente (°C)",
         "NASALabel": "T2M",
-        "Emoji": "🌡",
+        "Emoji": "🌡️",
         "Color": "#069458"
     },
     "TOPER": {
@@ -74,7 +74,7 @@ DICT_PARAMS = {
     },
     "WS10M": {
         "Label": "Vwind 10 m (m/s)",
-        "Name": "Velocidad del viento a 10 m (m/s):",
+        "Name": "Velocidad del viento a 10 m (m/s)",
         "NASALabel": "WS10M",
         "Emoji": "🪁",
         "Color": "#00B3B3"
@@ -100,7 +100,7 @@ DICT_PARAMS = {
 
 DICT_PARAMS_WIND = {
     "W10M": {"WS": "WS10M", "WD": "WD10M", "Label": "Wind 10 m"},
-    "W50M": {"WS": "WS50M", "WD": "WD10M", "Label": "Wind 50 m"},
+    "W50M": {"WS": "WS50M", "WD": "WD50M", "Label": "Wind 50 m"},
 }
 
 DICT_PARAMS_LABEL_KEY = {value["Label"]: key for key, value in DICT_PARAMS.items()} 

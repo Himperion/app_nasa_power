@@ -4,7 +4,7 @@ import streamlit as st
 import datetime as dt
 import plotly.express as px
 
-from funtions import windRose, timeSteps
+from funtions import windRose, timeSteps, heatmaps
 from data.param import DICT_PARAMS, DICT_PARAMS_LABEL_KEY, DICT_PARAMS_WIND, DICT_TIME
 
 CONFIG_PX ={
@@ -196,20 +196,19 @@ def viewDataframeWind(df: pd.DataFrame, key: str, timeInfo: dict):
 
     ws_key, wd_key = DICT_PARAMS_WIND[key]["WS"], DICT_PARAMS_WIND[key]["WD"]
     ws_label, wd_label = DICT_PARAMS[ws_key]["Label"], DICT_PARAMS[wd_key]["Label"]
-    columnName = DICT_PARAMS[ws_key]["Name"]
+    ws_name, ws_color = DICT_PARAMS[ws_key]["Name"], DICT_PARAMS[wd_key]["Color"]
     
     wind_df = windRose.make_wind_df(data_df=df, ws_label=ws_label, wd_label=wd_label)
     color_discrete_map = windRose.get_colors_of_strength(wind_df)
 
-    tab1, tab2, tab3, tab4 = st.tabs(["📈 Gráfica de tiempo ", "🌬️ Rosa de los vientos", "📊 Histograma", "💾 Descargas"])
+    tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "🧭 Dirección del viento", "🏃 Velocidad del viento"])
 
     with tab1:
         viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=ws_label)
     with tab2:
-        windRose.plotly_windrose(wind_df=wind_df, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=columnName)
-    with tab3:
-        windRose.plotly_windhist(wind_df=wind_df, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=columnName)
-    with tab4:
+        windRose.plotly_windrose(wind_df=wind_df, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=ws_name)
+        windRose.plotly_windhist(wind_df=wind_df, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=ws_name)
+
         dictWindDownload = {
             "Xlsx": {
                 "label": "Datos histograma de velocidad del viento",
@@ -223,6 +222,9 @@ def viewDataframeWind(df: pd.DataFrame, key: str, timeInfo: dict):
         }
 
         getDownloadButtons(dictDownload=dictWindDownload, df=wind_df, dictionary=None)
+    with tab3:
+        windRose.plotly_histWS(df=df, ws_key=ws_key, ws_label=ws_label, ws_name=ws_name, ws_color=ws_color, config=CONFIG_PX)
+        
 
     return
 
@@ -256,66 +258,19 @@ def view_dataframe_information(df: pd.DataFrame):
         # heatmap
         # if "ALLSKY_SFC_SW_DWN" in listColumnsKeys:
         #     for year in timeInfo["years"]:
-        #         df_heatmap: pd.DataFrame = df[df["dates (Y-M-D hh:mm:ss)"].dt.year == year]
-        #         df_heatmap["dateOfYear"] = df_heatmap["dates (Y-M-D hh:mm:ss)"].dt.date
-        #         df_heatmap["dayOfYear"] = df_heatmap["dates (Y-M-D hh:mm:ss)"].dt.dayofyear
-        #         df_heatmap["hourOfDay"] = df_heatmap["dates (Y-M-D hh:mm:ss)"].dt.hour
-
-        #         pivot = df_heatmap.pivot_table(
-        #             index="hourOfDay",
-        #             columns="dateOfYear",
-        #             values=DICT_PARAMS["ALLSKY_SFC_SW_DWN"]["Label"],
-        #             aggfunc="mean"
-        #         )
-
-        #         st.dataframe(pivot)
-
-        #         fig = px.imshow(
-        #             pivot,
-        #             aspect="auto",
-        #             color_continuous_scale="Turbo",
-        #             origin="lower",
-        #             labels={
-        #                 "x": "Fecha",
-        #                 "y": "Hora",
-        #                 "color": DICT_PARAMS["ALLSKY_SFC_SW_DWN"]["Name"]
-        #             }
-        #         )
-
-        #         fig.update_xaxes(
-        #             tickformat="%d-%m-%Y",       # Formato de fecha
-        #             tickangle=0
-        #             )
-
-        #         fig.update_layout(
-        #             title="Heatmap de Irradiancia Solar (W/m²)",
-        #             xaxis_nticks=12    # menos saturado
-        #         )
-
-        #         with st.container(border=True):
-        #             st.plotly_chart(fig, use_container_width=True, config=CONFIG_PX)
-                
-                
-
-            
-
-        
-        # Aca la modificación
+       
 
     for i in range(0,len(listColumnsKeys),1):
+        columnKey = listColumnsKeys[i]
         with listSubTabCon[i]:
-            if listColumnsKeys[i] == "ALLSKY_SFC_SW_DWN":
-                tab1, tab2 = st.tabs(["📈 Gráfica de tiempo ", "📊 Diagrama Hora Solar Pico"])
+            if columnKey == "ALLSKY_SFC_SW_DWN" or columnKey == "LOAD":
+                tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", f"📊 Diagrama de barras", "🔥 Heatmaps"])
                 with tab1:
                     viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=listColumnsLabel[i])
                 with tab2:    
-                    timeSteps.viewDfsTimeLapse("ALLSKY_SFC_SW_DWN", df_day, df_month, df_year, timeInfo)
-            elif listColumnsKeys[i] == "LOAD":
-                tab1, tab2 = st.tabs(["📈 Gráfica de tiempo ", "📊 Perfil de demanda eléctrica"])
-                with tab1:
-                    viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=listColumnsLabel[i])
-                with tab2:
-                    timeSteps.viewDfsTimeLapse("LOAD", df_day, df_month, df_year, timeInfo)
+                    timeSteps.viewDfsTimeLapse(columnKey, df_day, df_month, df_year, timeInfo)
+                with tab3:
+                    heatmaps.get_heatmaps(df=df, timeInfoYears=timeInfo["years"], Label=DICT_PARAMS[columnKey]["Label"], Name=DICT_PARAMS[columnKey]["Name"], config_PX=CONFIG_PX)
                     
             elif  listColumnsKeys[i] == "W10M" or listColumnsKeys[i] == "W50M":
                 viewDataframeWind(df=df,  key=listColumnsKeys[i], timeInfo=timeInfo)        
