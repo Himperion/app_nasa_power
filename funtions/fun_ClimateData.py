@@ -12,16 +12,16 @@ dict_download = {
         "type_file": "xlsx",
         "fileName": "PES_params",
         "nime": "xlsx",
-        "emoji": "📄",
+        "emoji": ":material/file_save:",
         "key": "PES_params",
-        "type": "primary"
+        "type": "secondary"
         },
     "Yaml": {
         "label": "Archivo de datos del sitio",
         "type_file": "yaml",
         "fileName": "PES_data",
         "nime": "text/yaml",
-        "emoji": "📌",
+        "emoji": ":material/globe_location_pin:",
         "key": "PES_data",
         "type": "secondary"
     }  
@@ -40,7 +40,7 @@ selectCoordinateOptions = [
 
 def get_multiselect_params(list_show_output):
 
-    show_output = st.multiselect(label=f"🪛 **Personalizar parámetros de salida**", options=list_show_output, default=list_show_output)
+    show_output = st.multiselect(label=f":material/build: **Personalizar parámetros de salida**", options=list_show_output, default=list_show_output)
 
     return show_output
 
@@ -137,14 +137,14 @@ def get_outForm1(dict_params, dict_parameters, options, cal_rows):
             "type": "xlsx",
             "fileName": "PES_params",
             "nime": "xlsx",
-            "emoji": "📄"
+            "emoji": ":material/file_save:"
             },
         "Yaml": {
             "label": "Archivo de datos del sitio",
             "type": "yaml",
             "fileName": "PES_data",
             "nime": "text/yaml",
-            "emoji": "📌"
+            "emoji": ":material/globe_location_pin:"
         }  
     }
     
@@ -191,11 +191,3 @@ def get_number_input_latitude_longitude(lat_value: float, lon_value: float):
     lon_input = col2.number_input('Ingrese la longitud:', min_value=-180.0, max_value=180.0, step=0.000001, format="%.6f", value=lon_value)
 
     return lat_input, lon_input
-
-
-
-
-
-
-col1, col2 = st.columns(2)
-

@@ -34,66 +34,66 @@ DICT_PARAMS = {
         "Label": "Dwind 10 m (°)",
         "Name": "Dirección del viento a 10m (°)",
         "NASALabel": "WD10M",
-        "Emoji": "🌬",
+        "Emoji": ":material/explore:",
         "Color": "#00B3B3"
     },
     "WD50M": {
         "Label": "Dwind 50 m (°)",
         "Name": "Dirección del viento a 50m (°)",
         "NASALabel": "WD50M",
-        "Emoji": "🌬",
+        "Emoji": ":material/explore:",
         "Color": "#034D4D"
     },
     "ALLSKY_SFC_SW_DWN": {
         "Label": "Gin (W/m²)",
         "Name": "Irradiancia (W/m²)",
         "NASALabel": "ALLSKY_SFC_SW_DWN",
-        "Emoji": "☀️",
+        "Emoji": ":material/sunny:",
         "Color": "#66C2C2"
     },
     "LOAD": {
         "Label": "Load (kW)",
         "Name": "Demanda (kW)",
         "NASALabel": None,
-        "Emoji": "💡",
+        "Emoji": ":material/lightbulb_2:",
         "Color": "#069494",
     },
     "T2M": {
         "Label": "Tamb (°C)",
         "Name": "Temperatura ambiente (°C)",
         "NASALabel": "T2M",
-        "Emoji": "🌡️",
+        "Emoji": ":material/device_thermostat:",
         "Color": "#069458"
     },
     "TOPER": {
         "Label": "Toper (°C)",
         "Name": "Temperatura de operación del modulo fotovoltaico",
         "NASALabel": None,
-        "Emoji": "🪛",
+        "Emoji": ":material/heat:",
         "Color": "#8B0000"
     },
     "WS10M": {
         "Label": "Vwind 10 m (m/s)",
         "Name": "Velocidad del viento a 10 m (m/s)",
         "NASALabel": "WS10M",
-        "Emoji": "🪁",
+        "Emoji": ":material/speed:",
         "Color": "#00B3B3"
     },
     "WS50M": {
         "Label": "Vwind 50 m (m/s)",
         "Name": "Velocidad del viento a 50 m (m/s)",
         "NASALabel": "WS50M",
-        "Emoji": "🪁",
+        "Emoji": ":material/speed:",
         "Color": "#034D4D"
     },
     "W10M": {
         "Label": "Wind 10 m",
-        "Emoji": "🪁",
+        "Emoji": ":material/air:",
         "Color": "#4169E1",
     },
     "W50M": {
         "Label": "Wind 50 m",
-        "Emoji": "🪁",
+        "Emoji": ":material/air:",
         "Color": "#0044FF"
     }
 }

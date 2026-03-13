@@ -6,18 +6,11 @@ import folium, warnings, yaml
 import matplotlib.pyplot as plt
 from streamlit_folium import st_folium
 
-from funtions import general, funTap1, funTap2, funTap3, funTap4, geoData
+from funtions import fun_ClimateData, fun_ElectricityConsumption, general, funTap2, funTap4, geoData
 
 warnings.filterwarnings("ignore")
 
 #%% cache_data
-
-@st.cache_data
-def get_outForm1(dict_params, dict_parameters, options, cal_rows):
-
-    data = funTap1.get_out(dict_params, dict_parameters, options, cal_rows)
-
-    return data
 
 @st.cache_data
 def get_outForm2(df, optionsSel, NOCT):
@@ -29,7 +22,7 @@ def get_outForm2(df, optionsSel, NOCT):
 @st.cache_data
 def get_outForm3(df_data, df_loadResized, columnLoad, range_variation):
 
-    data = funTap3.addLoadData(df_data, df_loadResized, columnLoad, range_variation)
+    data = fun_ElectricityConsumption.addLoadData(df_data, df_loadResized, columnLoad, range_variation)
 
     return data
 
@@ -38,9 +31,9 @@ def get_outForm4(dict_params, constants_GD):
 
     n_samples = 60 // dict_params['deltaTime_m']
 
-    out = funTap3.create_dataframe_nsamples(dict_params["df_excel"], n_samples)
-    out = funTap3.modify_time_interval(out, dict_params["deltaTime_m"])
-    out = funTap3.process_data(out, n_samples, dict_params, constants_GD)
+    out = fun_ElectricityConsumption.create_dataframe_nsamples(dict_params["df_excel"], n_samples)
+    out = fun_ElectricityConsumption.modify_time_interval(out, dict_params["deltaTime_m"])
+    out = fun_ElectricityConsumption.process_data(out, n_samples, dict_params, constants_GD)
     excel_bytes = general.get_excel_bytes(out)
 
     return excel_bytes
@@ -50,9 +43,9 @@ def get_outForm4(dict_params, constants_GD):
 with open(general.resource_path("files//dict_parameters.yaml"), 'r') as archivo:
     dict_parameters = yaml.safe_load(archivo)
 
-dict_downloadTap1 = funTap1.dict_download
+dict_downloadTap1 = fun_ClimateData.dict_download
 dict_downloadTap2 = funTap2.dict_download
-dict_downloadTap3 = funTap3.dict_download
+dict_downloadTap3 = fun_ElectricityConsumption.dict_download
 
 min_value, max_value = general.get_date_imput_nasa()
 
@@ -103,138 +96,6 @@ list_tabs = [
     "🔌 Consumo eléctrico",
     "⏱️ Aumentar número de muestras"
     ]
-
-latitude, longitude, data_dates = None, None, None
-
-def home():
-
-    st.title("Herramientas de caracterización")
-    st.markdown("Aplicación web diseñada para la ayuda en **caracterización de proyectos de generación eléctrica**, esta permite analizar y obtener información espacio-temporal de variables climáticas y de consumo eléctrico. Los datos resultantes se consolidan en un archivo **Excel** esencial para las siguientes fases de estudio.")
-
-    st.header("🌤️ **Datos climáticos y potencial energético**", divider="green")
-    st.markdown("Esta sección permite obtener lecturas horarias de variables climáticas clave como la **irradiancia**, **temperatura ambiente**, y la **velocidad y dirección del viento**. Estas lecturas provienen del sistema **NASA POWER** (Prediction Of Worldwide Energy Resources), que genera sus datos mediante la combinación de **observaciones satelitales** y **modelos matemáticos** de asimilación global.")
-    st.markdown(
-            "<p style='font-size: 0.9em; color: gray;'>🔗<a href='https://power.larc.nasa.gov/' target='_blank'>NASA POWER</a></p>",
-            unsafe_allow_html=True
-        )
-
-    st.header("🔌 **Consumo eléctrico**", divider="green")
-    st.markdown("Esta funcionalidad permite la **incorporación de perfiles de carga eléctrica** basados en plantillas predeterminadas o definidos por el usuario.")
-
-    return
-
-def tab1():
-    st.session_state["dict_paramsForm2"] = None
-    st.session_state["dict_paramsForm3"] = None
-    st.session_state["dict_paramsForm4"] = None
-
-    latitude, longitude = None, None
-    flag_submittedTab1 = False
-    
-    st.header(list_tabs[0])
-
-    dataEntryOptions = st.selectbox(label="Opciones de ingreso de datos", options=funTap1.selectDataEntryOptions,
-                                    index=0, placeholder="Selecciona una opción")
-    
-    if dataEntryOptions == funTap1.selectDataEntryOptions[0]:
-        flag_submittedTab1 = False
-        click_map = folium.Map(location=[7.142056, -73.121231], zoom_start=18)
-        click_marker = folium.LatLngPopup()
-        click_map.add_child(click_marker)
-
-        with st.container(height=400):
-            map_local = st_folium(click_map, height=367, use_container_width=True)
-
-        if map_local and map_local["last_clicked"]:
-            coords = map_local["last_clicked"]
-            latitude, longitude = round(coords['lat'], 5), round(coords['lng'], 5)
-
-            with st.container(border=False):
-                country, flag = geoData.getCountryAndFlag(lat=latitude, lon=longitude)
-
-                col1, col2, col3, col4 = st.columns([0.25, 0.25, 0.25, 0.25])
-                col1.markdown(f"**:blue[{country}:]** {flag}")
-                col2.markdown(f"**:blue[Latitud:]** {latitude}")
-                col3.markdown(f"**:blue[Longitud:]** {longitude}")
-
-    elif dataEntryOptions == funTap1.selectDataEntryOptions[1]:
-        flag_submittedTab1 = False
-        coordinate_options = st.selectbox(label="Opciones de ingreso de coordenadas geográficas",
-                                          options=funTap1.selectCoordinateOptions,
-                                          index=1, placeholder="Selecciona una opción")
-        
-        with st.container(border=True):
-            st.markdown("🌎 **:blue[{0}:]**".format("Datos del sitio"))
-            if coordinate_options == funTap1.selectCoordinateOptions[0]:
-                latitude, longitude = funTap1.get_GMS_2_GD()
-            elif coordinate_options == funTap1.selectCoordinateOptions[1]:
-                latitude, longitude = funTap1.get_number_input_latitude_longitude(lat_value=7.142056, lon_value=-73.12123)
-
-    elif dataEntryOptions == funTap1.selectDataEntryOptions[2]:
-        flag_submittedTab1 = False
-        with st.container(border=True):
-            uploadedFileYaml = st.file_uploader(label="Sube tu archivo YAML", type=["yaml", "yml"])
-
-    with st.form('form1'):
-        if dataEntryOptions == funTap1.selectDataEntryOptions[0] or dataEntryOptions == funTap1.selectDataEntryOptions[1]:
-            with st.container(border=True):
-                st.markdown("🗓️ **:blue[{0}:]**".format("Estampa de tiempo"))
-                col1, col2 = st.columns(2)
-                date_ini = col1.date_input("Fecha de Inicio:", max_value=min_value)
-                date_end = col2.date_input("Fecha Final:", max_value=max_value)
-
-        parameterOptions = funTap1.get_parameterOptions(dict_parameters)
-        options = funTap1.get_multiselect_params(list_show_output=parameterOptions)
-
-        submittedTab1 = st.form_submit_button("Aceptar")
-
-        if submittedTab1:
-            if dataEntryOptions == funTap1.selectDataEntryOptions[0] or dataEntryOptions == funTap1.selectDataEntryOptions[1]:
-                if latitude is not None and longitude is not None:
-                    st.session_state['dict_paramsForm1'] = {
-                        "latitude": float(latitude),
-                        "longitude": float(longitude),
-                        "start": date_ini,
-                        "end": date_end
-                        }
-                    flag_submittedTab1 = True
-                else:
-                    st.warning("Ingrese una latitud y longitud en el mapa interactivo", icon="⚠️")
- 
-            elif dataEntryOptions == funTap1.selectDataEntryOptions[2]:
-                if uploadedFileYaml is not None:
-                    try:
-                        st.session_state['dict_paramsForm1'] = yaml.safe_load(uploadedFileYaml)
-                        flag_submittedTab1 = True
-                    except:
-                        st.error("Error al cargar archivo **YAML** (.yaml)", icon="🚨")
-                else:
-                    st.warning("Cargar archivo **YAML** (.yaml)", icon="⚠️")
-
-    if st.session_state['dict_paramsForm1'] is not None and flag_submittedTab1:   
-        dict_params = st.session_state['dict_paramsForm1']
-        cal_rows = funTap1.cal_rows(dict_params["start"], dict_params["end"], steps=60)
-
-        if len(options) != 0:
-            if cal_rows > 0:
-                dict_outForm1 = {
-                    "dict_params" : dict_params,
-                    "dict_parameters": dict_parameters,
-                    "options": options,
-                    "cal_rows": cal_rows
-                }
-                data = get_outForm1(**dict_outForm1)
-                general.viewInformation(data, dict_params, dict_downloadTap1)
-     
-            else:
-                if cal_rows == 0:
-                    st.warning("La {0} debe ser diferente a la {1}".format(":blue[Fecha de Inicio]", ":blue[Fecha final]"), icon="⚠️")
-                if cal_rows < 0:
-                    st.warning("La {0} debe ser menor a la {1}".format(":blue[Fecha de Inicio]", ":blue[Fecha final]"), icon="⚠️")
-        else:
-            st.warning("Ingrese por lo menos una opción en {0}".format(":blue[Seleccione los datos a cargar]"), icon="⚠️")
-            
-    return
         
 def tab2():
     st.session_state['dict_paramsForm1'] = None
@@ -369,7 +230,7 @@ def tab3():
                 uploadedXlsxLOAD = st.file_uploader(label=f"📋 Cargar archivo **perfil de carga eléctrica**", type=["xlsx"], key="uploadedXlsxLOAD")
 
                 if uploadedXlsxLOAD is not None:
-                    df_loadResized = funTap3.get_dfLoadProfile(uploadedXlsx=uploadedXlsxLOAD, optionLoad=radioLoad, kWh_day=kWh_day, columnLoad=columnLoad)
+                    df_loadResized = fun_ElectricityConsumption.get_dfLoadProfile(uploadedXlsx=uploadedXlsxLOAD, optionLoad=radioLoad, kWh_day=kWh_day, columnLoad=columnLoad)
                 if df_loadResized is not None:
                     general.graphDataframe(df_loadResized, "Hora", f"{typeLoad} (kW)", "teal", "Potencia (kW)", "Curva De Demanda")
 
@@ -398,10 +259,10 @@ def tab3():
             if uploadedXlsxDATA is not None:
                 try:
                     df_data = pd.read_excel(uploadedXlsxDATA)
-                    checkTime, timeInfo = funTap3.checkTimeData(df_data, deltaMinutes=60)
+                    checkTime, timeInfo = fun_ElectricityConsumption.checkTimeData(df_data, deltaMinutes=60)
 
                     if checkTime and df_loadResized is not None:
-                        df_data = funTap3.addLoadData(df_data, df_loadResized, f"{typeLoad} (kW)", range_variation)
+                        df_data = fun_ElectricityConsumption.addLoadData(df_data, df_loadResized, f"{typeLoad} (kW)", range_variation)
 
                         st.session_state['dict_paramsForm3'] = {
                             "df_data": df_data,
@@ -519,7 +380,7 @@ def tab5():
                 }
                 
 
-                xj, yj, mean_yj, iter_count, err_values, var_min, var_max = funTap3.exampleCF(**dictExampleCF)
+                xj, yj, mean_yj, iter_count, err_values, var_min, var_max = fun_ElectricityConsumption.exampleCF(**dictExampleCF)
 
                 tab1, tab2, tab3 = st.tabs(["Resumen de resultados", "Gráfica de puntos generados", "Gráfica de evolución del error"])
 
@@ -587,7 +448,7 @@ def tab5():
                 try:
                     df_excel = pd.read_excel(uploaded_file)
 
-                    checkTime, timeInfo = funTap3.checkTimeData(df_excel, deltaMinutes=60)
+                    checkTime, timeInfo = fun_ElectricityConsumption.checkTimeData(df_excel, deltaMinutes=60)
 
                     if checkTime:
                         with st.expander(f'📄 Ver dataset **:blue[{uploaded_file.name}]**'):
@@ -637,10 +498,36 @@ with st.sidebar:
     with st.expander("**Recursos**", icon="🖥️"):
         st.link_button("Sistemas de Generación Eléctrica", "https://apps-energy-generation-e3t.streamlit.app/", icon="3️⃣", type="tertiary")
 
-pg = st.navigation([
-    st.Page(home, title="🏠 Generalidades"),
-    st.Page(tab1, title=list_tabs[0]),          # 1. Datos climaticos
-    #st.Page(tab2, title=list_tabs[1]),          # 2. Temperatura de operación
-    st.Page(tab3, title=list_tabs[2]),          # 3. Consumo eléctrico
-])
+# pg = st.navigation([
+#     st.Page(home, title="🏠 Generalidades"),
+#     st.Page(tab1, title=list_tabs[0]),          # 1. Datos climaticos
+#     st.Page(tab2, title=list_tabs[1]),          # 2. Temperatura de operación
+#     st.Page(tab3, title=list_tabs[2]),          # 3. Consumo eléctrico
+# ])
+# pg.run()
+
+# st.Page("pages_Home//generalities.py", title="Generalidades", icon=":material/home:")
+
+
+pages = {
+    "Inicio": [
+        st.Page("pages_Home//generalities.py", title="Generalidades", icon=":material/home:"),
+        st.Page("pages_Home//resources.py", title="Recursos", icon=":material/laptop_windows:")
+    ],
+    "Herramientas": [
+        st.Page("pages_Tools//pag_ClimateData.py", title="Datos climáticos y potencial energético", icon=":material/partly_cloudy_day:"),
+        st.Page("pages_Tools//pag_ElectricityConsumption.py", title="Consumo eléctrico", icon=":material/electrical_services:"),
+    ],
+}
+
+pg = st.navigation(pages)
 pg.run()
+
+list_tabs = [
+    "🌤️ Datos climáticos y potencial energético",
+    "🌡️ Temperatura de operación",
+    "🔌 Consumo eléctrico",
+    "⏱️ Aumentar número de muestras"
+    ]
+
+# Climate data and energy potential

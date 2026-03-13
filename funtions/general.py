@@ -201,7 +201,7 @@ def viewDataframeWind(df: pd.DataFrame, key: str, timeInfo: dict):
     wind_df = windRose.make_wind_df(data_df=df, ws_label=ws_label, wd_label=wd_label)
     color_discrete_map = windRose.get_colors_of_strength(wind_df)
 
-    tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "🧭 Dirección del viento", "🏃 Velocidad del viento"])
+    tab1, tab2, tab3 = st.tabs([":material/bid_landscape: Gráfica de tiempo ", ":material/explore: Dirección del viento", ":material/speed: Velocidad del viento"])
 
     with tab1:
         viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=ws_label)
@@ -215,7 +215,7 @@ def viewDataframeWind(df: pd.DataFrame, key: str, timeInfo: dict):
                 "type_file": "xlsx",
                 "fileName": f"PES_histWind_{key}",
                 "nime": "xlsx",
-                "emoji": "📄",
+                "emoji": ":material/description:",
                 "key": f"PES_histWind_{key}",
                 "type": "secondary"
             }
@@ -223,7 +223,7 @@ def viewDataframeWind(df: pd.DataFrame, key: str, timeInfo: dict):
 
         getDownloadButtons(dictDownload=dictWindDownload, df=wind_df, dictionary=None)
     with tab3:
-        tab3sub1, tab3sub2 = st.tabs(["📊 Histograma", "🔥 Heatmaps"])
+        tab3sub1, tab3sub2 = st.tabs([":material/bar_chart: Histograma", ":material/mode_heat: Heatmaps"])
 
         with tab3sub1:
             windRose.plotly_histWS(df=df, ws_key=ws_key, ws_label=ws_label, ws_name=ws_name, ws_color=ws_color, config=CONFIG_PX)
@@ -262,7 +262,7 @@ def view_dataframe_information(df: pd.DataFrame):
         columnKey = listColumnsKeys[i]
         with listSubTabCon[i]:
             if columnKey == "ALLSKY_SFC_SW_DWN" or columnKey == "LOAD":
-                tab1, tab2, tab3 = st.tabs(["📈 Gráfica de tiempo ", "📊 Diagrama de barras", "🔥 Heatmaps"])
+                tab1, tab2, tab3 = st.tabs([":material/bid_landscape: Gráfica de tiempo ", ":material/finance: Diagrama de barras", ":material/mode_heat: Heatmaps"])
                 with tab1:
                     viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=listColumnsLabel[i])
                 with tab2:    
@@ -302,7 +302,7 @@ def viewInformation(df_data: pd.DataFrame, dict_params: dict|None, dict_download
 
     df_day, df_month, df_year = None, None, None
 
-    sub_tab1, sub_tab2, sub_tab3 = st.tabs(["📋 Parámetros", "📈 Gráficas", "💾 Descargas"])
+    sub_tab1, sub_tab2, sub_tab3 = st.tabs([":material/grid_on: Parámetros", ":material/bid_landscape: Gráficas", ":material/save: Descargas"])
 
     with sub_tab1:
         with st.container(border=True):
@@ -318,7 +318,7 @@ def viewInformation(df_data: pd.DataFrame, dict_params: dict|None, dict_download
                 bytesFile = toExcelAnalysisTime(df_day, df_month, df_year)
 
                 st.download_button(
-                    label="📄 Descargar **:blue[Datos en estampas de tiempo] XLSX**",
+                    label=":material/file_save: Descargar **:blue[Datos en estampas de tiempo] XLSX**",
                     data=bytesFile,
                     file_name=nameFileHead(name="dataTimeStamps.xlsx"),
                     mime="xlsx",

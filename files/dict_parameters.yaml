@@ -13,7 +13,7 @@
 Irradiancia (W/m^2):
   NASALabel: ALLSKY_SFC_SW_DWN
   columnLabel: "Gin (W/m\xB2)"
-  emoji: "\U0001F324\uFE0F"
+  emoji: ":material/sunny:"
   color: '#FFA500'
   key: ALLSKY_SFC_SW_DWN
 "Perfil de demanda el\xE9ctrica":

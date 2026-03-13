@@ -14,9 +14,9 @@ dict_download = {
         "type_file": "xlsx",
         "fileName": "PES_addLoad",
         "nime": "xlsx",
-        "emoji": "📄",
+        "emoji": ":material/file_save:",
         "key": "PES_addLoad",
-        "type": "primary"
+        "type": "secondary"
     }
 }
 
@@ -65,11 +65,11 @@ def get_dfLoadProfile(uploadedXlsx, optionLoad: str, kWh_day: float|None, column
                     dfLoadProfile[columnLoad] = round(dfLoadProfile["Datos"]/1000, 6)
                     dfLoadProfile.rename(columns={"Datos": columnLoad})
             else:
-                st.error("Se deben respetar las dimensiones de la plantilla: **Perfil de carga eléctrica**", icon="🚨")
+                st.error("Se deben respetar las dimensiones de la plantilla: **Perfil de carga eléctrica**", icon=":material/error:")
         else:
-            st.error("Se deben respetar los nombres en las columnas de la plantilla: **Perfil de carga eléctrica**", icon="🚨")
+            st.error("Se deben respetar los nombres en las columnas de la plantilla: **Perfil de carga eléctrica**", icon=":material/error:")
     except:
-        st.error("Error al cargar archivo **EXCEL** (.xlsx)", icon="🚨")
+        st.error("Error al cargar archivo **EXCEL** (.xlsx)", icon=":material/error:")
 
     return dfLoadProfile
 
