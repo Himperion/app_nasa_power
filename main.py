@@ -494,9 +494,6 @@ def tab5():
         
     return
 
-with st.sidebar:
-    with st.expander("**Recursos**", icon="🖥️"):
-        st.link_button("Sistemas de Generación Eléctrica", "https://apps-energy-generation-e3t.streamlit.app/", icon="3️⃣", type="tertiary")
 
 # pg = st.navigation([
 #     st.Page(home, title="🏠 Generalidades"),
@@ -522,12 +519,3 @@ pages = {
 
 pg = st.navigation(pages)
 pg.run()
-
-list_tabs = [
-    "🌤️ Datos climáticos y potencial energético",
-    "🌡️ Temperatura de operación",
-    "🔌 Consumo eléctrico",
-    "⏱️ Aumentar número de muestras"
-    ]
-
-# Climate data and energy potential
