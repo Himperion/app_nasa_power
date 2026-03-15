@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
-
+import qrcode
+from io import BytesIO
 
 text = {
     "subheader_1" : "Implementación del proyecto **Diseño de un aplicativo para la estimación de la operación de sistemas de generación eléctrica a partir de balances de potencia y energía**"
@@ -18,6 +19,18 @@ with tab1:
 
     # st.title("Herramientas de caracterización")
     st.markdown("Aplicación web diseñada para la ayuda en **caracterización de proyectos de generación eléctrica**, esta permite analizar y obtener información espacio-temporal de variables climáticas y de consumo eléctrico. Los datos resultantes se consolidan en un archivo **Excel** esencial para las siguientes fases de estudio.")
+
+    
+    with st.container(border=True):
+        st.header(":material/qr_code_2: **Código QR de la aplicación**", divider="yellow")
+
+        url = "https://app-nasa-power.streamlit.app/"
+        qr = qrcode.make(url)
+        buffer = BytesIO()
+        qr.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        st.image(buffer.getvalue(), width=250)
 
     with st.container(border=True):
         st.header(":material/partly_cloudy_day: **Datos climáticos y potencial energético**", divider="yellow")
