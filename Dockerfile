@@ -1,5 +1,5 @@
 # Usar una imagen base de Python
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # evitar buffering de Python en logs
 ENV PYTHONUNBUFFERED=1

@@ -18,19 +18,23 @@ with tab1:
     # st.link_button(":orange-badge[**Presentación TdeG**]", "https://www.canva.com/design/DAGmHexFq7U/mIh7Px5eheIPUwhtWkfnmw/edit?utm_content=DAGmHexFq7U&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton", icon="👨‍🏫")
 
     # st.title("Herramientas de caracterización")
-    st.markdown("Aplicación web diseñada para la ayuda en **caracterización de proyectos de generación eléctrica**, esta permite analizar y obtener información espacio-temporal de variables climáticas y de consumo eléctrico. Los datos resultantes se consolidan en un archivo **Excel** esencial para las siguientes fases de estudio.")
-
     
     with st.container(border=True):
         st.header(":material/qr_code_2: **Código QR de la aplicación**", divider="yellow")
 
-        url = "https://app-nasa-power.streamlit.app/"
-        qr = qrcode.make(url)
-        buffer = BytesIO()
-        qr.save(buffer, format="PNG")
-        buffer.seek(0)
+        col1, col2 = st.columns([0.5, 0.5], vertical_alignment="center")
 
-        st.image(buffer.getvalue(), width=250)
+        with col1:
+            url = "https://app-nasa-power.streamlit.app/"
+            qr = qrcode.make(url)
+            buffer = BytesIO()
+            qr.save(buffer, format="PNG")
+            buffer.seek(0)
+
+            st.image(buffer.getvalue(), width=250)
+
+        with col2:
+            st.markdown("Aplicación web diseñada para la ayuda en **caracterización de proyectos de generación eléctrica**, esta permite analizar y obtener información espacio-temporal de variables climáticas y de consumo eléctrico. Los datos resultantes se consolidan en un archivo **Excel** esencial para las siguientes fases de estudio.")
 
     with st.container(border=True):
         st.header(":material/partly_cloudy_day: **Datos climáticos y potencial energético**", divider="yellow")
