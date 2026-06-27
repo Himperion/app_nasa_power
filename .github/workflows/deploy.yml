@@ -5,6 +5,9 @@ on:
     branches:
       - master
 
+env:
+  ENABLE_ACR_PUSH: "false" 
+  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,14 +16,21 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v3
 
-      - name: Login al ACR
+      - name: Build imagen local
         run: |
-          echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+          docker build -t app_nasa_power:latest .
 
-      - name: Build imagen
+      - name: Login al ACR
+        if: env.ENABLE_ACR_PUSH == 'true'
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/app_nasa_power:latest .
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ secrets.ACR_LOGIN_SERVER }} " -u "${{ secrets.ACR_USERNAME }}" --password-stdin
+
+      - name: Tag imagen para ACR
+        if: env.ENABLE_ACR_PUSH == 'true'
+        run: |
+          docker tag app_nasa_power:latest ${{ secrets.ACR_LOGIN_SERVER }}/app_nasa_power:latest
 
       - name: Push imagen
+        if: env.ENABLE_ACR_PUSH == 'true'
         run: |
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/app_nasa_power:latest
