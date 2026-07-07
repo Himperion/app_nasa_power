@@ -54,9 +54,9 @@ def getDfsTimeLapse(df: pd.DataFrame, timeInfo: dict):
     if timeInfo["deltaDays"] > 0:
         df_day = getDfGrouperDay(df=df, listColumns=listColumns, deltaMinutes=timeInfo["deltaMinutes"])
     if timeInfo["deltaMonths"] > 0:
-        df_month = getDfGrouper(df=df_day, listColumns=listColumns, freq="M")
+        df_month = getDfGrouper(df=df_day, listColumns=listColumns, freq="ME")
     if timeInfo["deltaYears"] > 0:
-        df_year = getDfGrouper(df=df_month, listColumns=listColumns, freq="Y")
+        df_year = getDfGrouper(df=df_month, listColumns=listColumns, freq="YE")
 
     if df_day is not None:
         df_day["dates (Y-M-D hh:mm:ss)"] = df_day["dates (Y-M-D hh:mm:ss)"].dt.date

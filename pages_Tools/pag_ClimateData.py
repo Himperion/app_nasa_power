@@ -13,7 +13,6 @@ def get_outForm1(dict_params, dict_parameters, options, cal_rows):
 
     return data
 
-
 #%% global variables
 
 min_value, max_value = general.get_date_imput_nasa()

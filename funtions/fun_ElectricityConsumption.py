@@ -77,14 +77,17 @@ def addLoadData(df_data: pd.DataFrame, df_loadResized: pd.DataFrame, columnLoad:
 
     min_variation, max_variation = int(range_variation[0][:-1])/100, int(range_variation[1][:-1])/100
 
-    df_data[DICT_KEY_LABEL["LOAD"]] = 0.0
+    num_days = int(df_data.shape[0] / 24)
+    base_values = df_loadResized[columnLoad].values
 
-    for i in range(0,int(df_data.shape[0]/24),1):
-        lowerValue, upperValue = 24*i, 24*(i+1)-1
-        variation = np.random.uniform(min_variation, max_variation, size=len(df_loadResized)).tolist()
-        list_values = df_loadResized[columnLoad].tolist()
+    # Repetir el patrón base de 24 horas para todos los días del dataset
+    tiled_values = np.tile(base_values, num_days)
 
-        df_data.loc[lowerValue:upperValue, DICT_KEY_LABEL["LOAD"]] = [round(list_values[i]*(1+variation[i]), 3) for i in range(0,len(list_values),1)]
+    # Generar variaciones uniformes para todo el dataset de una sola vez
+    variations = np.random.uniform(min_variation, max_variation, size=df_data.shape[0])
+
+    # Calcular y asignar de manera vectorizada redondeando a 3 decimales
+    df_data[DICT_KEY_LABEL["LOAD"]] = np.round(tiled_values * (1 + variations), 3)
 
     return df_data
 

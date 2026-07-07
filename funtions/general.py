@@ -4,7 +4,7 @@ import streamlit as st
 import datetime as dt
 import plotly.express as px
 
-from funtions import windRose, timeSteps, heatmaps
+from funtions import windRose, timeSteps, heatmaps, solarCard
 from data.param import DICT_PARAMS, DICT_PARAMS_LABEL_KEY, DICT_PARAMS_WIND, DICT_TIME
 
 CONFIG_PX ={
@@ -132,6 +132,8 @@ def getListsTabsGraph(listDfColumns: list) -> tuple[list, list, list]:
         listColumnsKeys = fixListColumnsKey(listColumnsKeys, remove_wd="WD10M", remove_ws="WS10M", add_w="W10M")
     if "WD50M" in listColumnsKeys and "WS50M" in listColumnsKeys:
         listColumnsKeys = fixListColumnsKey(listColumnsKeys, remove_wd="WD50M", remove_ws="WS50M", add_w="W50M")
+    if "SUN_AZMT" in listColumnsKeys and "SUN_ELVT" in listColumnsKeys:
+        listColumnsKeys = fixListColumnsKey(listColumnsKeys, remove_wd="SUN_AZMT", remove_ws="SUN_ELVT", add_w="SOLAR-CHART")
 
     for item in listColumnsKeys:
         listColumnsLabel.append(DICT_PARAMS[item]["Label"])
@@ -238,7 +240,7 @@ def view_dataframe_information(df: pd.DataFrame):
     timeInfo = getTimeData(df)
     listSubTabCon = []
     df_day, df_month, df_year = None, None, None
-    
+
     if len(listColumnsTabs) == 1:
         subtab_con1 = st.tabs(listColumnsTabs)
         listSubTabCon = [subtab_con1[0]]
@@ -254,6 +256,12 @@ def view_dataframe_information(df: pd.DataFrame):
     elif len(listColumnsTabs) == 5:
         subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5 = st.tabs(listColumnsTabs)
         listSubTabCon = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5]
+    elif len(listColumnsTabs) == 6:
+        subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6 = st.tabs(listColumnsTabs)
+        listSubTabCon = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6]
+    elif len(listColumnsTabs) == 7:
+        subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6, subtab_con7 = st.tabs(listColumnsTabs)
+        listSubTabCon = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6, subtab_con7]
 
     if "ALLSKY_SFC_SW_DWN" in listColumnsKeys or "LOAD" in listColumnsKeys:
         df_day, df_month, df_year = timeSteps.getDfsTimeLapse(df=df, timeInfo=timeInfo)
@@ -271,7 +279,9 @@ def view_dataframe_information(df: pd.DataFrame):
                     heatmaps.get_heatmaps(df=df, timeInfoYears=timeInfo["years"], Label=DICT_PARAMS[columnKey]["Label"], Name=DICT_PARAMS[columnKey]["Name"], config_PX=CONFIG_PX)
                     
             elif  listColumnsKeys[i] == "W10M" or listColumnsKeys[i] == "W50M":
-                viewDataframeWind(df=df,  key=listColumnsKeys[i], timeInfo=timeInfo)        
+                viewDataframeWind(df=df,  key=listColumnsKeys[i], timeInfo=timeInfo)
+            elif listColumnsKeys[i] == "SOLAR-CHART":
+                solarCard.viewDataframeSolarChart(df=df)
             else:
                 viwe_info_df_time(df=df, timeInfo=timeInfo, column_label=listColumnsLabel[i])
                 

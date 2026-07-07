@@ -1,4 +1,5 @@
 env/
+.agents/
 __pycache__/
 *.pyc
 cloudbuild.yaml

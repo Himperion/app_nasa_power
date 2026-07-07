@@ -95,6 +95,23 @@ DICT_PARAMS = {
         "Label": "Wind 50 m",
         "Emoji": ":material/air:",
         "Color": "#0044FF"
+    },
+    "SUN_AZMT":{
+        "Label": "Azimuth (°)",
+        "Name": "Azimut (°)",
+        "Emoji": ":material/360:",
+        "Color": "#0044FF"
+    },
+    "SUN_ELVT":{
+        "Label": "Elevation (°)",
+        "Name": "Elevación (°)",
+        "Emoji": ":material/north_east:",
+        "Color": "#0044FF"
+    },
+    "SOLAR-CHART": {
+        "Label": "Carta solar",
+        "Emoji": ":material/orbit:",
+        "Color": "#0044FF"
     }
 }
 

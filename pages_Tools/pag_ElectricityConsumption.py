@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
-from funtions import general
 from funtions import fun_ElectricityConsumption, general
 
 #%% cache_data
 
-@st.cache_data
+def _hash_dataframe_fast(df: pd.DataFrame) -> tuple | None:
+    if df is None or df.empty:
+        return None
+    return (df.shape, list(df.columns), df.iloc[0].to_dict(), df.iloc[-1].to_dict())
+
+@st.cache_data(hash_funcs={pd.DataFrame: _hash_dataframe_fast})
 def get_outForm3(df_data, df_loadResized, columnLoad, range_variation):
 
     data = fun_ElectricityConsumption.addLoadData(df_data, df_loadResized, columnLoad, range_variation)
@@ -77,16 +81,6 @@ with st.container(border=True):
             with open("files/[Plantilla] - AddLoad.xlsx", "rb") as file:
                 st.download_button(label="Descargar plantilla **:blue[Perfil de carga eléctrica]**:", data=file, icon="📄",
                                     file_name="IngresoPerfilDeCarga.xlsx", mime="xlsx")
-
-
-        
-        
-        # df_loadResized = pd.DataFrame(load_time_stamp, columns=[columnLoad])
-        # df_loadResized["Hora"] = list(range(0,24,1))
-
-        # if df_loadResized is not None:
-        #     with st.container(border=True):
-        #         general.graphDataframe(df_loadResized, "Hora", columnLoad, "teal", "Potencia (kW)", False)
 
     with st.container(border=True):
         uploadedXlsxDATA = st.file_uploader(label=f":material/upload_file: **Cargar archivo {labelUploadedYamlDATA}**", type=["xlsx"], key="uploadedXlsxDATA")
