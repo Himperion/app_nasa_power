@@ -169,7 +169,7 @@ def graphDataframe(df: pd.DataFrame, x, y, color, value_label, title, timeInfo: 
     )
 
     with st.container(border=True):
-        st.plotly_chart(fig, use_container_width=True, config=CONFIG_PX)
+        st.plotly_chart(fig, width="content", config=CONFIG_PX)
 
     return
 
@@ -190,7 +190,7 @@ def viwe_info_df_time(df: pd.DataFrame, timeInfo: dict, column_label: str, range
     fig.update_traces(line_color=DICT_PARAMS[key]["Color"])
 
     with st.container(border=True):
-        st.plotly_chart(fig, use_container_width=True, config=CONFIG_PX)
+        st.plotly_chart(fig, width="content", config=CONFIG_PX)
 
     return
 

@@ -1,28 +1,38 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
-import folium, yaml
+import datetime as dt
+import calendar, folium, yaml
 from streamlit_folium import st_folium
 from funtions import general, fun_ClimateData, geoData, solarCard
 
 
 #%% session_state
 
-if "dict_params" not in st.session_state:
-    st.session_state["dict_params"] = None
+if "df_data" not in st.session_state:
+    st.session_state["df_data"] = None
+if "flagCalRows" not in st.session_state:
+    st.session_state["flagCalRows"] = False
 
 #%% global variables
 
 dict_download = solarCard.dict_download
 
+optSelTimePrints = [
+    ":material/edit_calendar: Selección de fecha y hora",
+    ":material/upload_file: Cargar archivo con estampa de tiempo"
+]
+
 latitude, longitude = None, None
-df_dates = None
+uploadedXlsxDATES = None
 
 #%% main
 
 st.header(":material/wb_sunny: **Carta solar**")
 
 with st.container(border=True):
+
+    st.markdown("**:material/globe_location_pin: Ingreso de datos geográficos**")
 
     dataEntryOptions = st.selectbox(label="Opciones de ingreso de datos", options=fun_ClimateData.selectDataEntryOptions,
                                     index=0, placeholder="Selecciona una opción")
@@ -54,50 +64,135 @@ with st.container(border=True):
                                             options=fun_ClimateData.selectCoordinateOptions,
                                             index=1, placeholder="Selecciona una opción")
         
-        with st.container(border=True):
-            st.markdown(":material/globe_location_pin: **:blue[{0}:]**".format("Datos del sitio"))
-            if coordinate_options == fun_ClimateData.selectCoordinateOptions[0]:
-                latitude, longitude = fun_ClimateData.get_GMS_2_GD()
-            elif coordinate_options == fun_ClimateData.selectCoordinateOptions[1]:
-                latitude, longitude = fun_ClimateData.get_number_input_latitude_longitude(lat_value=7.142056, lon_value=-73.12123)
+        if coordinate_options == fun_ClimateData.selectCoordinateOptions[0]:
+            latitude, longitude = fun_ClimateData.get_GMS_2_GD()
+        elif coordinate_options == fun_ClimateData.selectCoordinateOptions[1]:
+            latitude, longitude = fun_ClimateData.get_number_input_latitude_longitude(lat_value=7.142056, lon_value=-73.12123)
 
     elif dataEntryOptions == fun_ClimateData.selectDataEntryOptions[2]:
         flag_submittedTab1 = False
         with st.container(border=True):
             uploadedFileYaml = st.file_uploader(label="Sube tu archivo YAML", type=["yaml", "yml"])
 
-    with st.container(border=True):
-        uploadedXlsxDATES = st.file_uploader(label=f":material/upload_file: Cargar archivo **de Fechas**", type=["xlsx"], key="uploadedXlsxDATES")
+with st.container(border=True):
 
-        # if uploadedXlsxDATES is not None:
-        #     df_dates = pd.read_excel(uploadedXlsxDATES)
-        #     df_dates["dates (Y-M-D hh:mm:ss)"] = pd.to_datetime(df_dates["dates (Y-M-D hh:mm:ss)"])
-        #     df_dates = df_dates.set_index("dates (Y-M-D hh:mm:ss)")
+    st.markdown("**:material/date_range: Ingreso de estampas de tiempo**")
 
-    submitted = st.button("Aceptar")
+    optionsTimePrints = st.radio(
+        label="Opciones para el ingreso de rango de tiempo",
+        options=optSelTimePrints,
+        captions=["Ingreso manual de datos horarios", "Carga de archivo EXCEL (.xlsx) con columna de estampas de tiempo"],
+        index=0
+    )
 
-    if submitted:
-        if uploadedXlsxDATES is not None:
-            if latitude is not None and longitude is not None:
+    if optionsTimePrints == optSelTimePrints[0]:
+
+        print(optionsTimePrints)
+
+        dateNow = dt.datetime.now()
+
+        selTimeDelta = st.select_slider(
+            label=":material/timer: Seleccionar delta en minutos de las muestras para el rango horario",
+            options=list(range(5,65,5)),
+            value=15
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            startDate = st.datetime_input(
+                label=":material/today: Fecha de inicio:",
+                value=dt.datetime(dateNow.year, dateNow.month, 1, 0, 0),
+                step=dt.timedelta(minutes=selTimeDelta)
+            )
+
+        with col2:
+            endDate = st.datetime_input(
+                label=":material/event: Fecha final:",
+                value=dt.datetime(dateNow.year, dateNow.month, calendar.monthrange(dateNow.year, dateNow.month)[1], 23, 45),
+                step=dt.timedelta(minutes=selTimeDelta)
+            )
+
+        if startDate is not None and endDate is not None:
+            calRows = fun_ClimateData.cal_rows(startDate, endDate, steps=selTimeDelta)
+
+            if calRows < 0:
+                st.session_state["flagCalRows"] = False
+                st.error("La **Fecha final** debe ser mayor a la **Fecha de inicio**", icon=":material/error:")
+            else:
+                st.session_state["flagCalRows"] = True
+
+
+
+    elif optionsTimePrints == optSelTimePrints[1]:
+
+        uploadedXlsxDATES = st.file_uploader(label=f":material/upload_file: Cargar archivo de **estampas de tiempo**", type=["xlsx"], key="uploadedXlsxDATES")
+
+    # if uploadedXlsxDATES is not None:
+    #     df_dates = pd.read_excel(uploadedXlsxDATES)
+    #     df_dates["dates (Y-M-D hh:mm:ss)"] = pd.to_datetime(df_dates["dates (Y-M-D hh:mm:ss)"])
+    #     df_dates = df_dates.set_index("dates (Y-M-D hh:mm:ss)")
+
+submitted = st.button("Aceptar")
+
+if submitted:
+    if latitude is not None and longitude is not None:
+        if optionsTimePrints == optSelTimePrints[0]:
+            if st.session_state["flagCalRows"]:
+                timeRange = pd.date_range(start=startDate, end=endDate, freq=dt.timedelta(minutes=selTimeDelta))
+
+                df_data = pd.DataFrame({"dates (Y-M-D hh:mm:ss)": timeRange})
+                df_data = solarCard.get_df_solar(df_data, latitude, longitude, "America/Bogota")
+
+                st.session_state["df_data"] = df_data
+
+                del df_data
+            else:
+                st.error("La **Fecha final** debe ser mayor a la **Fecha de inicio**", icon=":material/error:")
+        elif optionsTimePrints == optSelTimePrints[1]:
+            if uploadedXlsxDATES is not None:
                 try:
                     df_data = pd.read_excel(uploadedXlsxDATES)
                     df_data = solarCard.get_df_solar(df_data, latitude, longitude, "America/Bogota")
 
-                    st.session_state["dict_params"] = {
-                        "df_data": df_data,
-                    }
+                    st.session_state["df_data"] = df_data
+
+                    del df_data
 
                 except:
                     st.error("Error al cargar archivo **EXCEL** (.xlsx)", icon=":material/error:")
             else:
-                st.warning("Ingresar coordenadas geográficas", icon=":material/warning")
-        else:
-            st.error("Cargar archivo **EXCEL** (.xlsx)", icon=":material/error:")
+                st.warning("Cargar archivo **EXCEL** (.xlsx)", icon=":material/error:")
+    else:
+        st.warning("Ingresar coordenadas geográficas", icon=":material/warning")
 
-if st.session_state["dict_params"] is not None:
-    # st.dataframe(st.session_state["dict_params"]["df_data"])
+if st.session_state["df_data"] is not None:
+    general.viewInformation(st.session_state["df_data"], None, dict_download)
 
-    general.viewInformation(st.session_state["dict_params"]["df_data"], None, dict_download)
+
+
+# if submitted:
+#     if uploadedXlsxDATES is not None:
+#         if latitude is not None and longitude is not None:
+#             try:
+#                 df_data = pd.read_excel(uploadedXlsxDATES)
+#                 df_data = solarCard.get_df_solar(df_data, latitude, longitude, "America/Bogota")
+
+#                 st.session_state["dict_params"] = {
+#                     "df_data": df_data,
+#                 }
+
+#             except:
+#                 st.error("Error al cargar archivo **EXCEL** (.xlsx)", icon=":material/error:")
+#         else:
+#             st.warning("Ingresar coordenadas geográficas", icon=":material/warning")
+#     else:
+#         st.error("Cargar archivo **EXCEL** (.xlsx)", icon=":material/error:")
+
+# if st.session_state["dict_params"] is not None:
+#     # st.dataframe(st.session_state["dict_params"]["df_data"])
+
+#     general.viewInformation(st.session_state["dict_params"]["df_data"], None, dict_download)
 
 
 # if accept:
