@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 import datetime as dt
 import plotly.express as px
+from dateutil.relativedelta import relativedelta
 
 from funtions import windRose, timeSteps, heatmaps, solarCard
 from data.param import DICT_PARAMS, DICT_PARAMS_LABEL_KEY, DICT_PARAMS_WIND, DICT_TIME
@@ -64,8 +65,9 @@ def resource_path(relative_path: str):
 def get_date_imput_nasa() -> tuple[dt.date, dt.date]:
 
     date_now = dt.date.today() - dt.timedelta(days=250)
-    min_value = date_now.replace(day=1, month=date_now.month-1)
-    max_value = min_value.replace(month=min_value.month+1)
+    
+    min_value = (date_now - relativedelta(months=1)).replace(day=1)
+    max_value = min_value + relativedelta(months=1)
 
     return min_value, max_value
 

@@ -17,6 +17,7 @@ def get_outForm1(dict_params, dict_parameters, options, cal_rows):
 
 min_value, max_value = general.get_date_imput_nasa()
 
+
 with open(general.resource_path("files//dict_parameters.yaml"), 'r') as archivo:
     dict_parameters = yaml.safe_load(archivo)
 
