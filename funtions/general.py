@@ -171,7 +171,7 @@ def graphDataframe(df: pd.DataFrame, x, y, color, value_label, title, timeInfo: 
     )
 
     with st.container(border=True):
-        st.plotly_chart(fig, width="content", config=CONFIG_PX)
+        st.plotly_chart(fig, config=CONFIG_PX)
 
     return
 
@@ -192,7 +192,7 @@ def viwe_info_df_time(df: pd.DataFrame, timeInfo: dict, column_label: str, range
     fig.update_traces(line_color=DICT_PARAMS[key]["Color"])
 
     with st.container(border=True):
-        st.plotly_chart(fig, width="content", config=CONFIG_PX)
+        st.plotly_chart(fig, config=CONFIG_PX)
 
     return
 
@@ -240,30 +240,9 @@ def view_dataframe_information(df: pd.DataFrame):
 
     listColumnsKeys, listColumnsLabel, listColumnsTabs = getListsTabsGraph(listDfColumns=df)
     timeInfo = getTimeData(df)
-    listSubTabCon = []
     df_day, df_month, df_year = None, None, None
 
-    if len(listColumnsTabs) == 1:
-        subtab_con1 = st.tabs(listColumnsTabs)
-        listSubTabCon = [subtab_con1[0]]
-    elif len(listColumnsTabs) == 2:
-        subtab_con1, subtab_con2 = st.tabs(listColumnsTabs)
-        listSubTabCon = [subtab_con1, subtab_con2]
-    elif len(listColumnsTabs) == 3:
-        subtab_con1, subtab_con2, subtab_con3 = st.tabs(listColumnsTabs)
-        listSubTabCon = [subtab_con1, subtab_con2, subtab_con3]
-    elif len(listColumnsTabs) == 4:
-        subtab_con1, subtab_con2, subtab_con3, subtab_con4 = st.tabs(listColumnsTabs)
-        listSubTabCon = [subtab_con1, subtab_con2, subtab_con3, subtab_con4]
-    elif len(listColumnsTabs) == 5:
-        subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5 = st.tabs(listColumnsTabs)
-        listSubTabCon = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5]
-    elif len(listColumnsTabs) == 6:
-        subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6 = st.tabs(listColumnsTabs)
-        listSubTabCon = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6]
-    elif len(listColumnsTabs) == 7:
-        subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6, subtab_con7 = st.tabs(listColumnsTabs)
-        listSubTabCon = [subtab_con1, subtab_con2, subtab_con3, subtab_con4, subtab_con5, subtab_con6, subtab_con7]
+    listSubTabCon = list(st.tabs(listColumnsTabs))
 
     if "ALLSKY_SFC_SW_DWN" in listColumnsKeys or "LOAD" in listColumnsKeys:
         df_day, df_month, df_year = timeSteps.getDfsTimeLapse(df=df, timeInfo=timeInfo)

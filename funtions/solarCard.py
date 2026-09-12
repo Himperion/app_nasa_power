@@ -128,7 +128,7 @@ def plotlySolarProjection(df: pd.DataFrame):
         legend=dict(title="Meses", orientation="v", y=0.5, x=1.15)
     )
 
-    st.plotly_chart(fig, width="content")
+    st.plotly_chart(fig)
 
     df = df.drop(columns=["month", "hour", "minute"])
 
@@ -179,7 +179,7 @@ def plotyCylindricalProjection3D(df: pd.DataFrame):
 
     # 5. Renderizar en tu app de Streamlit
 
-    st.plotly_chart(fig, width="content")
+    st.plotly_chart(fig)
 
     return
 
@@ -283,7 +283,7 @@ def plotyCylindricalProjection(df: pd.DataFrame):
         legend=dict(title="Meses", orientation="v", y=0.5, x=1.05)
     )
 
-    st.plotly_chart(fig, width="content")
+    st.plotly_chart(fig)
 
     return
 

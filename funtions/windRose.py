@@ -95,7 +95,7 @@ def plotly_windrose(wind_df: pd.DataFrame, color_discrete_map: dict, config: dic
     )
 
     with st.container(border=True):
-        st.plotly_chart(fig, use_container_width=True, config=config)
+        st.plotly_chart(fig, config=config)
 
     return
 
@@ -137,7 +137,7 @@ def plotly_windhist(wind_df: pd.DataFrame, color_discrete_map: dict, config: dic
     )
 
     with st.container(border=True):
-        st.plotly_chart(fig, use_container_width=True, config=config)
+        st.plotly_chart(fig, config=config)
 
     return
 
@@ -180,7 +180,7 @@ def plotly_histWS(df: pd.DataFrame, ws_key: str, ws_label: str, ws_name: str, ws
     fig.update_layout(bargap=0.05)
 
     with st.container(border=True):
-        st.plotly_chart(fig, use_container_width=True, config=config)
+        st.plotly_chart(fig, config=config)
 
         dictDownload = {
             "Xlsx": {

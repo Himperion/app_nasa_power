@@ -54,7 +54,7 @@ def get_heatmaps(df: pd.DataFrame, timeInfoYears: list, Label: str, Name: str, c
         )
 
         with st.container(border=True):
-            st.plotly_chart(fig, use_container_width=True, config=config_PX)
+            st.plotly_chart(fig, config=config_PX)
 
             dictDownload = {
                 "Xlsx": {

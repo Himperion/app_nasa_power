@@ -109,7 +109,7 @@ def add_column_dates(dataframe: pd.DataFrame, date_ini, rows, steps) -> pd.DataF
                               freq=pd.Timedelta(minutes=steps))
         
         if dataframe.shape[0] >= dates.shape[0]:
-            dataframe = dataframe.head(rows)
+            dataframe = dataframe.head(rows).copy()
 
         if dataframe.shape[0] == dates.shape[0]:
             dataframe["dates (Y-M-D hh:mm:ss)"] = dates
