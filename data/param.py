@@ -35,14 +35,16 @@ DICT_PARAMS = {
         "Name": "Dirección del viento a 10m (°)",
         "NASALabel": "WD10M",
         "Emoji": ":material/explore:",
-        "Color": "#00B3B3"
+        "Color": "#00B3B3",
+        "Unit": "°"
     },
     "WD50M": {
         "Label": "Dwind 50 m (°)",
         "Name": "Dirección del viento a 50m (°)",
         "NASALabel": "WD50M",
         "Emoji": ":material/explore:",
-        "Color": "#034D4D"
+        "Color": "#034D4D",
+        "Unit": "°"
     },
     "ALLSKY_SFC_SW_DWN": {
         "Label": "Gin (W/m²)",
@@ -65,28 +67,32 @@ DICT_PARAMS = {
         "Name": "Temperatura ambiente (°C)",
         "NASALabel": "T2M",
         "Emoji": ":material/device_thermostat:",
-        "Color": "#069458"
+        "Color": "#069458",
+        "Unit": "°C"
     },
     "TOPER": {
         "Label": "Toper (°C)",
         "Name": "Temperatura de operación del modulo fotovoltaico",
         "NASALabel": None,
         "Emoji": ":material/heat:",
-        "Color": "#8B0000"
+        "Color": "#8B0000",
+        "Unit": "°C"
     },
     "WS10M": {
         "Label": "Vwind 10 m (m/s)",
         "Name": "Velocidad del viento a 10 m (m/s)",
         "NASALabel": "WS10M",
         "Emoji": ":material/speed:",
-        "Color": "#00B3B3"
+        "Color": "#00B3B3",
+        "Unit": "m/s"
     },
     "WS50M": {
         "Label": "Vwind 50 m (m/s)",
         "Name": "Velocidad del viento a 50 m (m/s)",
         "NASALabel": "WS50M",
         "Emoji": ":material/speed:",
-        "Color": "#034D4D"
+        "Color": "#034D4D",
+        "Unit": "m/s"
     },
     "W10M": {
         "Label": "Wind 10 m",
@@ -102,13 +108,15 @@ DICT_PARAMS = {
         "Label": "Azimuth (°)",
         "Name": "Azimut (°)",
         "Emoji": ":material/360:",
-        "Color": "#0044FF"
+        "Color": "#0044FF",
+        "Unit": "°"
     },
     "SUN_ELVT":{
         "Label": "Elevation (°)",
         "Name": "Elevación (°)",
         "Emoji": ":material/north_east:",
-        "Color": "#0044FF"
+        "Color": "#0044FF",
+        "Unit": "°"
     },
     "SOLAR-CHART": {
         "Label": "Carta solar",

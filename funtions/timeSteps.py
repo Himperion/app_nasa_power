@@ -79,69 +79,73 @@ def viewDfsTimeLapse(key: str, df_day: pd.DataFrame|None, df_month: pd.DataFrame
 
     if key == "ALLSKY_SFC_SW_DWN":
         if df_day is not None:
-            dictAux = {
-                "df": df_day, "x": "Fecha", "y": "HSP (día)", "color": DICT_PARAMS["ALLSKY_SFC_SW_DWN"]["Color"],
-                "value_label": "HSP", "title": "Hora Solar Pico (día)",
-                "timeInfo": timeInfo, "rangeSelector": True, "rangeSlider": True
-            }
-            dictParamsDfTime["HSP (día)"] = dictAux
+            if df_day.shape[0] > 1:
+                dictAux = {
+                    "df": df_day, "x": "Fecha", "y": "HSP (día)", "color": DICT_PARAMS["ALLSKY_SFC_SW_DWN"]["Color"],
+                    "value_label": "HSP", "title": "Hora Solar Pico (día)", "Unit": "día",
+                    "timeInfo": timeInfo, "rangeSelector": True, "rangeSlider": True
+                }
+                dictParamsDfTime["HSP (día)"] = dictAux
         if df_month is not None:
-            dictAux = {
-                "df": df_month, "x": "Fecha", "y": "HSP (mes)", "color": DICT_PARAMS["ALLSKY_SFC_SW_DWN"]["Color"],
-                "value_label": "HSP", "title": "Hora Solar Pico (mes)",
-                "timeInfo": None, "rangeSelector": False, "rangeSlider": True
-            }
-            dictParamsDfTime["HSP (mes)"] = dictAux
-        if df_month is not None:
-            dictAux = {
-                "df": df_year, "x": "Fecha", "y": "HSP (año)", "color": DICT_PARAMS["ALLSKY_SFC_SW_DWN"]["Color"],
-                "value_label": "HSP", "title": "Hora Solar Pico (mes)",
-                "timeInfo": None, "rangeSelector": False, "rangeSlider": False
-            }
-            dictParamsDfTime["HSP (año)"] = dictAux
+            if df_month.shape[0] > 1:
+                dictAux = {
+                    "df": df_month, "x": "Fecha", "y": "HSP (mes)", "color": DICT_PARAMS["ALLSKY_SFC_SW_DWN"]["Color"],
+                    "value_label": "HSP", "title": "Hora Solar Pico (mes)",  "Unit": "mes",
+                    "timeInfo": None, "rangeSelector": False, "rangeSlider": True
+                }
+                dictParamsDfTime["HSP (mes)"] = dictAux
+        if df_year is not None:
+            if df_year.shape[0] > 1:
+                dictAux = {
+                    "df": df_year, "x": "Fecha", "y": "HSP (año)", "color": DICT_PARAMS["ALLSKY_SFC_SW_DWN"]["Color"],
+                    "value_label": "HSP", "title": "Hora Solar Pico (mes)", "Unit": "año",
+                    "timeInfo": None, "rangeSelector": False, "rangeSlider": False
+                }
+                dictParamsDfTime["HSP (año)"] = dictAux
 
     elif key == "LOAD":
         if df_day is not None:
-            dictAux = {
-                "df": df_day, "x": "Fecha", "y": "Load (kWh/día)", "color": DICT_PARAMS["LOAD"]["Color"],
-                "value_label": "Demanda (kWh/día)", "title": "Demanda eléctrica (día)",
-                "timeInfo": timeInfo, "rangeSelector": True, "rangeSlider": True
-            }
-            dictParamsDfTime["Demanda eléctrica (día)"] = dictAux
+            if df_day.shape[0] > 1:
+                dictAux = {
+                    "df": df_day, "x": "Fecha", "y": "Load (kWh/día)", "color": DICT_PARAMS["LOAD"]["Color"],
+                    "value_label": "Demanda (kWh/día)", "title": "Demanda eléctrica (día)",
+                    "timeInfo": timeInfo, "rangeSelector": True, "rangeSlider": True, "Unit": "día",
+                }
+                dictParamsDfTime["Demanda eléctrica (día)"] = dictAux
         if df_month is not None:
-            dictAux = {
-                "df": df_month, "x": "Fecha", "y": "Load (kWh/mes)", "color": DICT_PARAMS["LOAD"]["Color"],
-                "value_label": "Demanda (kWh/mes)", "title": "Demanda eléctrica (mes)",
-                "timeInfo": None, "rangeSelector": False, "rangeSlider": True
-            }
-            dictParamsDfTime["Demanda eléctrica (mes)"] = dictAux
-        if df_month is not None:
-            dictAux = {
-                "df": df_year, "x": "Fecha", "y": "Load (kWh/año)", "color": DICT_PARAMS["LOAD"]["Color"],
-                "value_label": "Demanda (kWh/año)", "title": "Demanda eléctrica (año)",
-                "timeInfo": None, "rangeSelector": False, "rangeSlider": False
-            }
-            dictParamsDfTime["Demanda eléctrica (año)"] = dictAux
+            if df_month.shape[0] > 1:
+                dictAux = {
+                    "df": df_month, "x": "Fecha", "y": "Load (kWh/mes)", "color": DICT_PARAMS["LOAD"]["Color"],
+                    "value_label": "Demanda (kWh/mes)", "title": "Demanda eléctrica (mes)", "Unit": "mes",
+                    "timeInfo": None, "rangeSelector": False, "rangeSlider": True
+                }
+                dictParamsDfTime["Demanda eléctrica (mes)"] = dictAux
+        if df_year is not None:
+            if df_year.shape[0] > 1:
+                dictAux = {
+                    "df": df_year, "x": "Fecha", "y": "Load (kWh/año)", "color": DICT_PARAMS["LOAD"]["Color"],
+                    "value_label": "Demanda (kWh/año)", "title": "Demanda eléctrica (año)", "Unit": "año",
+                    "timeInfo": None, "rangeSelector": False, "rangeSlider": False
+                }
+                dictParamsDfTime["Demanda eléctrica (año)"] = dictAux
 
 
     listKeysDicts = [key for key in dictParamsDfTime]
-    listEmojis = ["📅", "📆", "🗓️"]
+    listEmojis = [":material/calendar_clock:", ":material/calendar_today:", ":material/calendar_month:"]
     listTabsLabel = [f"{listEmojis[i]} {listKeysDicts[i]}" for i in range(len(listKeysDicts))]
-    listTabs = []
+    listTabs = list(st.tabs(listTabsLabel))
 
-    if len(listKeysDicts) == 1:
-        tabs1 = st.tabs(listTabsLabel)
-        listTabs = [tabs1]
-    elif len(listKeysDicts) == 2:
-        tabs1, tabs2 = st.tabs(listTabsLabel)
-        listTabs = [tabs1, tabs2]
-    elif len(listKeysDicts) == 3:
-        tabs1, tabs2, tabs3 = st.tabs(listTabsLabel)
-        listTabs = [tabs1, tabs2, tabs3]
-
+    
     for i in range(0,len(listKeysDicts),1):
         with listTabs[i]:
-            viewData.graphDataframe(**dictParamsDfTime[listKeysDicts[i]])
+            dictInput = dictParamsDfTime[listKeysDicts[i]]
+            
+            viewData.viewSummaryMetrics(
+                df=dictInput["df"],
+                column_label=dictInput["y"],
+                column_unit=dictInput["Unit"]
+            )
 
+            viewData.graphDataframe(**dictInput)
 
     return

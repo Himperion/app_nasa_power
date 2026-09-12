@@ -107,6 +107,7 @@ def viewTabWind(df: pd.DataFrame, key: str, timeInfo: dict):
     tab1, tab2, tab3 = st.tabs([":material/bid_landscape: Gráfica de tiempo ", ":material/explore: Dirección del viento", ":material/speed: Velocidad del viento"])
 
     with tab1:
+        viewSummaryMetrics(df=df, column_label=ws_label, column_unit=DICT_PARAMS[ws_key]["Unit"])
         viweDfInfoTime(df=df, timeInfo=timeInfo, column_label=ws_label)
     with tab2:
         windRose.plotly_windrose(wind_df=wind_df, color_discrete_map=color_discrete_map, config=CONFIG_PX, column_name=ws_name)
@@ -146,9 +147,7 @@ def viewTabSolarProjection(df: pd.DataFrame):
      
     return
 
-def viewSummaryMetrics(df: pd.DataFrame, column_label: str, column_key: str):
-
-    column_unit = DICT_PARAMS[column_key]["Unit"]
+def viewSummaryMetrics(df: pd.DataFrame, column_label: str, column_unit: str):
 
     mean = round(df[column_label].mean(), 2)
     max = round(df[column_label].max(), 2)
@@ -176,7 +175,6 @@ def viewSummaryMetrics(df: pd.DataFrame, column_label: str, column_key: str):
             delta_arrow="off",
             delta_color="off"
         )
-
     with col3:
         st.metric(
             label="Mínimo",
@@ -207,7 +205,7 @@ def viewDfInfo(df: pd.DataFrame):
             if columnKey == "ALLSKY_SFC_SW_DWN" or columnKey == "LOAD":
                 tab1, tab2, tab3 = st.tabs([":material/bid_landscape: Gráfica de tiempo ", ":material/finance: Diagrama de barras", ":material/mode_heat: Heatmaps"])
                 with tab1:
-                    viewSummaryMetrics(df=df, column_label=listColumnsLabel[i], column_key=columnKey)
+                    viewSummaryMetrics(df=df, column_label=listColumnsLabel[i], column_unit=DICT_PARAMS[columnKey]["Unit"])
                     viweDfInfoTime(df=df, timeInfo=timeInfo, column_label=listColumnsLabel[i])
                 with tab2:    
                     timeSteps.viewDfsTimeLapse(columnKey, df_day, df_month, df_year, timeInfo)
@@ -219,6 +217,7 @@ def viewDfInfo(df: pd.DataFrame):
             elif listColumnsKeys[i] == "SOLAR-CHART":
                 viewTabSolarProjection(df=df)
             else:
+                viewSummaryMetrics(df=df, column_label=listColumnsLabel[i], column_unit=DICT_PARAMS[columnKey]["Unit"])
                 viweDfInfoTime(df=df, timeInfo=timeInfo, column_label=listColumnsLabel[i])
                 
     return df_day, df_month, df_year
@@ -254,7 +253,7 @@ def viewInformation(df_data: pd.DataFrame, dict_params: dict|None, dict_download
   
     return
 
-def graphDataframe(df: pd.DataFrame, x, y, color, value_label, title, timeInfo: dict|None=None, rangeSelector=False, rangeSlider=False):
+def graphDataframe(df: pd.DataFrame, x, y, color, value_label, title, timeInfo: dict|None=None, rangeSelector=False, rangeSlider=False, Unit: str|None=None):
 
     dict_xaxis = getDictRangeSelectorSlider(timeInfo=timeInfo, rangeSelector=rangeSelector, rangeSlider=rangeSlider)
 
