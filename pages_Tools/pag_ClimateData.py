@@ -2,7 +2,7 @@
 import streamlit as st
 import folium, yaml
 from streamlit_folium import st_folium
-from funtions import fun_ClimateData, general, geoData
+from funtions import fun_ClimateData, general, geoData, viewData
 
 #%% cache_data
 
@@ -126,7 +126,7 @@ if st.session_state["dict_paramsForm1"] is not None and flag_submittedTab1:
                 "cal_rows": cal_rows
             }
             data = get_outForm1(**dict_outForm1)
-            general.viewInformation(data, dict_params, dict_downloadTap1)
+            viewData.viewInformation(data, dict_params, dict_downloadTap1)
     
         else:
             if cal_rows == 0:

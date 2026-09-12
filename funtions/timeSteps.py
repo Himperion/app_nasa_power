@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-from funtions import general
+from funtions import viewData
 from data.param import DICT_PARAMS, DICT_PARAMS_LABEL_KEY
 
 def getVarAux(df_columns: list):
@@ -141,7 +141,7 @@ def viewDfsTimeLapse(key: str, df_day: pd.DataFrame|None, df_month: pd.DataFrame
 
     for i in range(0,len(listKeysDicts),1):
         with listTabs[i]:
-            general.graphDataframe(**dictParamsDfTime[listKeysDicts[i]])
+            viewData.graphDataframe(**dictParamsDfTime[listKeysDicts[i]])
 
 
     return

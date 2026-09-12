@@ -49,7 +49,8 @@ DICT_PARAMS = {
         "Name": "Irradiancia (W/m²)",
         "NASALabel": "ALLSKY_SFC_SW_DWN",
         "Emoji": ":material/sunny:",
-        "Color": "#66C2C2"
+        "Color": "#66C2C2",
+        "Unit": "W/m²"
     },
     "LOAD": {
         "Label": "Load (kW)",
@@ -57,6 +58,7 @@ DICT_PARAMS = {
         "NASALabel": None,
         "Emoji": ":material/lightbulb_2:",
         "Color": "#069494",
+        "Unit": "kW"
     },
     "T2M": {
         "Label": "Tamb (°C)",

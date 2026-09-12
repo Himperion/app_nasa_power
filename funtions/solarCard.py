@@ -294,7 +294,6 @@ def viewDataframeSolarChart(df: pd.DataFrame):
     with sub_tab1:
         plotlySolarProjection(df)
     with sub_tab2:
-        # plotyCylindricalProjection(df)
         plotyCylindricalProjection(df)
      
     return
