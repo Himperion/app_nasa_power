@@ -4,7 +4,7 @@ import pandas as pd
 import datetime as dt
 import calendar, folium, yaml
 from streamlit_folium import st_folium
-from funtions import general, fun_ClimateData, geoData, solarCard
+from funtions import fun_ClimateData, geoData, solarCard, viewData
 
 
 #%% session_state
@@ -87,8 +87,6 @@ with st.container(border=True):
 
     if optionsTimePrints == optSelTimePrints[0]:
 
-        print(optionsTimePrints)
-
         dateNow = dt.datetime.now()
 
         selTimeDelta = st.select_slider(
@@ -167,7 +165,7 @@ if submitted:
         st.warning("Ingresar coordenadas geográficas", icon=":material/warning")
 
 if st.session_state["df_data"] is not None:
-    general.viewInformation(st.session_state["df_data"], None, dict_download)
+    viewData.viewInformation(st.session_state["df_data"], None, dict_download)
 
 
 

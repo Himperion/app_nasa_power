@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
-from funtions import fun_ElectricityConsumption, general
+from funtions import fun_ElectricityConsumption, general, viewData
 
 #%% cache_data
 
@@ -50,7 +50,7 @@ with st.container(border=True):
                                         step=0.01, value=default_kWh_day)
         if typeLoad is not None:
             df_loadResized = general.get_df_load_resized(df_loadPU, kWh_day, typeLoad)
-            general.graphDataframe(df_loadResized, "Hora", f"{typeLoad} (kW)", "teal", "Potencia (kW)", "Curva De Demanda")
+            viewData.graphDataframe(df_loadResized, "Hora", f"{typeLoad} (kW)", "teal", "Potencia (kW)", "Curva De Demanda")
 
     elif typeLoad == opt_load_profile[1]:
         columnLoad = f"{typeLoad} (kW)"
@@ -111,5 +111,5 @@ with st.container(border=True):
 
 if st.session_state["dict_paramsForm3"] is not None:
     data = get_outForm3(**st.session_state["dict_paramsForm3"])
-    general.viewInformation(data, None, dict_downloadTap3)
+    viewData.viewInformation(data, None, dict_downloadTap3)
 
